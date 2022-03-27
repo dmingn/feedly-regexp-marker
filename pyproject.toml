@@ -1,0 +1,43 @@
+[tool.black]
+line-length = 79
+
+[tool.flake8]
+extend-ignore = "E203,E501,W503,W504"
+
+[tool.isort]
+line_length = 79
+profile = "black"
+
+[tool.mypy]
+plugins = "pydantic.mypy"
+
+[tool.poetry]
+name = "feedly_regexp_marker"
+version = "0.1.0"
+description = ""
+authors = ["dmingn <dmingn@users.noreply.github.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+click = "^8.0.4"
+feedly-client = "^0.23.2"
+pydantic = "^1.9.0"
+pydantic-yaml = {extras = ["ruamel"], version = "^0.6.3"}
+schedule = "^1.1.0"
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+isort = {extras = ["pyproject"], version = "^5.10.1"}
+mypy = "^0.941"
+pydocstyle = "^6.1.1"
+pyproject-flake8 = "^0.0.1-alpha.2"
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
