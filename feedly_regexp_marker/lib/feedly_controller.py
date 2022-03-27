@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
-from feedly.api_client.session import FeedlySession
+from feedly.api_client.session import Auth, FeedlySession
 
 
 stream_id_t = str
@@ -72,8 +72,8 @@ class StreamContents:
 
 
 class FeedlyController:
-    def __init__(self) -> None:
-        self.session = FeedlySession()
+    def __init__(self, auth: Auth) -> None:
+        self.session = FeedlySession(auth=auth)
         self.continuation: Optional[str] = None
 
     def fetch_unread_entries(self, count: int = 1000) -> list[Entry]:
