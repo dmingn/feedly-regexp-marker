@@ -1,0 +1,5 @@
+.env
+.mypy_cache
+.venv
+feedly_regexp_marker/__pycache__
+feedly_regexp_marker/lib/__pycache__
