@@ -53,7 +53,12 @@ def manage_access_token_using_slack(
                 try:
                     v = f(*args, **kwarg)
                     break
-                except UnauthorizedAPIError as e:
+                except (ValueError, UnauthorizedAPIError) as e:
+                    if isinstance(e, ValueError) and str(
+                        access_token_path.parent.absolute()
+                    ) not in str(e):
+                        raise
+
                     await app.client.chat_postMessage(
                         channel=slack_channel,
                         text=f"An error has occured: {e}",
