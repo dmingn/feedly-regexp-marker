@@ -19,11 +19,13 @@ authors = ["dmingn <dmingn@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+aiohttp = "^3.8.1"
 click = "^8.0.4"
 feedly-client = "^0.23.2"
 pydantic = "^1.9.0"
 pydantic-yaml = {extras = ["ruamel"], version = "^0.6.3"}
 schedule = "^1.1.0"
+slack-bolt = "^1.13.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
