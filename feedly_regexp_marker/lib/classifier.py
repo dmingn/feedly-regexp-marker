@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import re
 from pathlib import Path
 from re import Pattern
@@ -154,7 +155,19 @@ class Classifier:
 
     @classmethod
     def from_yaml(cls, yaml_path: Path) -> Classifier:
-        return cls(Rules.parse_file(yaml_path).to_rules_dict().compile())
+        if yaml_path.is_dir():
+            return cls(
+                merge_rules_dict(
+                    *[
+                        Rules.parse_file(p).to_rules_dict()
+                        for p in itertools.chain(
+                            yaml_path.glob("*.yaml"), yaml_path.glob("*.yml")
+                        )
+                    ]
+                ).compile()
+            )
+        else:
+            return cls(Rules.parse_file(yaml_path).to_rules_dict().compile())
 
     def __to_act(self, entry: Entry, action: action_t) -> bool:
         if action not in self.__compiled_rules_dict:
