@@ -179,6 +179,10 @@ class Classifier:
             entry.content
             and content_pattern
             and content_pattern.search(entry.content.content)
+        ) or (
+            entry.summary
+            and content_pattern
+            and content_pattern.search(entry.summary.content)
         ):
             return True
 
