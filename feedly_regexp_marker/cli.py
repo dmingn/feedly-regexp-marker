@@ -6,10 +6,10 @@ from typing import Optional
 import click
 import schedule
 from feedly.api_client.session import FileAuthStore
+from feedly.api_client.utils import run_example
 
 from feedly_regexp_marker.lib.classifier import Classifier
 from feedly_regexp_marker.lib.feedly_controller import FeedlyController
-from feedly_regexp_marker.lib.slack import manage_access_token_using_slack
 
 
 @click.command()
@@ -27,18 +27,16 @@ from feedly_regexp_marker.lib.slack import manage_access_token_using_slack
     type=click.Path(path_type=Path),
     default=Path.home() / ".config" / "feedly",
 )
-@click.option("--slack-channel", type=str, default="feedly_regexp_marker")
+@click.option("--use-slack", is_flag=True)
+@click.option("--slack-channel", type=str, default=None)
 def main(
     rules: Path,
     every_n_minutes: Optional[int],
     dry_run: bool,
     access_token_dir: Path,
-    slack_channel: str,
+    use_slack: bool,
+    slack_channel: Optional[str],
 ):
-    @manage_access_token_using_slack(
-        access_token_path=access_token_dir / "access.token",
-        slack_channel=slack_channel,
-    )
     def inner_main():
         feedly_controller = FeedlyController(
             auth=FileAuthStore(token_dir=access_token_dir)
@@ -68,4 +66,21 @@ def main(
         else:
             job()
 
-    asyncio.run(inner_main())
+    if use_slack:
+        from feedly_regexp_marker.lib.slack import (
+            manage_access_token_using_slack,
+        )
+
+        if not slack_channel:
+            raise ValueError(
+                "If --use-slack is set, --slack-channel cannot be empty."
+            )
+
+        asyncio.run(
+            manage_access_token_using_slack(
+                access_token_path=access_token_dir / "access.token",
+                slack_channel=slack_channel,
+            )(inner_main)()
+        )
+    else:
+        run_example(inner_main)
