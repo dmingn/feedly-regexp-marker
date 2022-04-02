@@ -40,6 +40,7 @@ class Entry:
     id: entry_id_t
     title: Optional[str] = None
     content: Optional[EntryContent] = None
+    summary: Optional[EntryContent] = None
     origin: Optional[EntryOrigin] = None
 
     @classmethod
@@ -49,6 +50,9 @@ class Entry:
             title=data.get("title", None),
             content=EntryContent.from_dict(data["content"])
             if "content" in data
+            else None,
+            summary=EntryContent.from_dict(data["summary"])
+            if "summary" in data
             else None,
             origin=EntryOrigin.from_dict(data["origin"])
             if "origin" in data
