@@ -5,10 +5,9 @@ from typing import Any, Literal, Optional
 
 from feedly.api_client.session import Auth, FeedlySession
 
-
-stream_id_t = str
-entry_id_t = str
-action_t = Literal["markAsSaved", "markAsRead"]
+StreamId = str
+EntryId = str
+Action = Literal["markAsSaved", "markAsRead"]
 
 
 @dataclass(frozen=True)
@@ -22,7 +21,7 @@ class EntryContent:
 
 @dataclass(frozen=True)
 class EntryOrigin:
-    stream_id: stream_id_t
+    stream_id: StreamId
     title: str
 
     @classmethod
@@ -37,7 +36,7 @@ class EntryOrigin:
 class Entry:
     """https://developer.feedly.com/v3/entries/#get-the-content-of-an-entry"""
 
-    id: entry_id_t
+    id: EntryId
     title: Optional[str] = None
     content: Optional[EntryContent] = None
     summary: Optional[EntryContent] = None
@@ -54,9 +53,7 @@ class Entry:
             summary=EntryContent.from_dict(data["summary"])
             if "summary" in data
             else None,
-            origin=EntryOrigin.from_dict(data["origin"])
-            if "origin" in data
-            else None,
+            origin=EntryOrigin.from_dict(data["origin"]) if "origin" in data else None,
         )
 
 
@@ -105,7 +102,7 @@ class FeedlyController:
         return stream_contents.items
 
     def __mark_entries(
-        self, entries: list[Entry], action: action_t, dry_run: bool
+        self, entries: list[Entry], action: Action, dry_run: bool
     ) -> None:
         if dry_run:
             print([entry.title for entry in entries])
@@ -124,11 +121,7 @@ class FeedlyController:
         )
 
     def save_entries(self, entries: list[Entry], dry_run: bool) -> None:
-        self.__mark_entries(
-            entries=entries, action="markAsSaved", dry_run=dry_run
-        )
+        self.__mark_entries(entries=entries, action="markAsSaved", dry_run=dry_run)
 
     def read_entries(self, entries: list[Entry], dry_run: bool) -> None:
-        self.__mark_entries(
-            entries=entries, action="markAsRead", dry_run=dry_run
-        )
+        self.__mark_entries(entries=entries, action="markAsRead", dry_run=dry_run)
