@@ -18,6 +18,10 @@ T3 = TypeVar("T3")
 
 PatternText = str
 EntryAttr = Literal["title", "content"]
+CompiledRulesDict = dict[
+    Action,
+    dict[StreamId, dict[EntryAttr, Optional[Pattern[PatternText]]]],
+]
 
 
 class EntryPatternTexts(BaseModel):
@@ -106,7 +110,7 @@ class RulesDict(BaseModel):
         dict[StreamId, dict[EntryAttr, frozenset[PatternText]]],
     ]
 
-    def compile(self) -> compiled_rules_dict_t:
+    def compile(self) -> CompiledRulesDict:
         @overload
         def __rec(data: frozenset[PatternText]) -> Pattern[PatternText]:
             ...
@@ -132,16 +136,10 @@ class RulesDict(BaseModel):
         return __rec(self.__root__)
 
 
-compiled_rules_dict_t = dict[
-    Action,
-    dict[StreamId, dict[EntryAttr, Optional[Pattern[PatternText]]]],
-]
-
-
 class Classifier:
     def __init__(
         self,
-        compiled_rules_dict: compiled_rules_dict_t,
+        compiled_rules_dict: CompiledRulesDict,
     ) -> None:
         self.__compiled_rules_dict = compiled_rules_dict
 
