@@ -9,35 +9,31 @@ from typing import Literal, Optional, TypeVar, cast, overload
 from pydantic import BaseModel
 from pydantic_yaml import YamlModel
 
-from feedly_regexp_marker.lib.feedly_controller import (
-    Entry,
-    action_t,
-    stream_id_t,
-)
+from feedly_regexp_marker.lib.feedly_controller import Action, Entry, StreamId
 
 T = TypeVar("T")
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
 T3 = TypeVar("T3")
 
-pattern_text_t = str
-entry_attr_t = Literal["title", "content"]
+PatternText = str
+EntryAttr = Literal["title", "content"]
 
 
 class EntryPatternTexts(BaseModel):
     class Config:
         frozen = True
 
-    title: frozenset[pattern_text_t] = frozenset()
-    content: frozenset[pattern_text_t] = frozenset()
+    title: frozenset[PatternText] = frozenset()
+    content: frozenset[PatternText] = frozenset()
 
 
 class Rule(BaseModel):
     class Config:
         frozen = True
 
-    stream_ids: frozenset[stream_id_t]
-    actions: frozenset[action_t]
+    stream_ids: frozenset[StreamId]
+    actions: frozenset[Action]
     patterns: EntryPatternTexts
     name: Optional[str] = None
 
@@ -46,7 +42,7 @@ class Rule(BaseModel):
             __root__={
                 action: {
                     stream_id: {
-                        cast(entry_attr_t, entry_attr): pattern_text_set
+                        cast(EntryAttr, entry_attr): pattern_text_set
                         for entry_attr, pattern_text_set in self.patterns
                     }
                     for stream_id in self.stream_ids
@@ -75,9 +71,7 @@ def merge_rules_dict(*args: frozenset[T]) -> frozenset[T]:
 
 
 @overload
-def merge_rules_dict(
-    *args: dict[T1, frozenset[T2]]
-) -> dict[T1, frozenset[T2]]:
+def merge_rules_dict(*args: dict[T1, frozenset[T2]]) -> dict[T1, frozenset[T2]]:
     ...
 
 
@@ -101,28 +95,26 @@ def merge_rules_dict(*args):
             for k in c.keys()
         }
     elif all(isinstance(x, RulesDict) for x in args):
-        return RulesDict(
-            __root__=merge_rules_dict(*[c.__root__ for c in args])
-        )
+        return RulesDict(__root__=merge_rules_dict(*[c.__root__ for c in args]))
     else:
         raise TypeError
 
 
 class RulesDict(BaseModel):
     __root__: dict[
-        action_t,
-        dict[stream_id_t, dict[entry_attr_t, frozenset[pattern_text_t]]],
+        Action,
+        dict[StreamId, dict[EntryAttr, frozenset[PatternText]]],
     ]
 
     def compile(self) -> compiled_rules_dict_t:
         @overload
-        def __rec(data: frozenset[pattern_text_t]) -> Pattern[pattern_text_t]:
+        def __rec(data: frozenset[PatternText]) -> Pattern[PatternText]:
             ...
 
         @overload
         def __rec(
-            data: dict[T1, frozenset[pattern_text_t]]
-        ) -> dict[T1, Pattern[pattern_text_t]]:
+            data: dict[T1, frozenset[PatternText]]
+        ) -> dict[T1, Pattern[PatternText]]:
             ...
 
         @overload
@@ -141,8 +133,8 @@ class RulesDict(BaseModel):
 
 
 compiled_rules_dict_t = dict[
-    action_t,
-    dict[stream_id_t, dict[entry_attr_t, Optional[Pattern[pattern_text_t]]]],
+    Action,
+    dict[StreamId, dict[EntryAttr, Optional[Pattern[PatternText]]]],
 ]
 
 
@@ -169,7 +161,7 @@ class Classifier:
         else:
             return cls(Rules.parse_file(yaml_path).to_rules_dict().compile())
 
-    def __to_act(self, entry: Entry, action: action_t) -> bool:
+    def __to_act(self, entry: Entry, action: Action) -> bool:
         if action not in self.__compiled_rules_dict:
             return False
 
@@ -179,15 +171,15 @@ class Classifier:
         ):
             return False
 
-        title_pattern = self.__compiled_rules_dict[action][
-            entry.origin.stream_id
-        ]["title"]
+        title_pattern = self.__compiled_rules_dict[action][entry.origin.stream_id][
+            "title"
+        ]
         if entry.title and title_pattern and title_pattern.search(entry.title):
             return True
 
-        content_pattern = self.__compiled_rules_dict[action][
-            entry.origin.stream_id
-        ]["content"]
+        content_pattern = self.__compiled_rules_dict[action][entry.origin.stream_id][
+            "content"
+        ]
         if (
             entry.content
             and content_pattern
