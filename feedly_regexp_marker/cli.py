@@ -1,12 +1,32 @@
+import os
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import click
+from feedly.api_client.protocol import WrappedHTTPError
 from feedly.api_client.session import FileAuthStore
+from slack_sdk import WebhookClient
 
 from feedly_regexp_marker.lib.classifier import Classifier
 from feedly_regexp_marker.lib.feedly_controller import FeedlyController
+
+
+def report_exception(client: WebhookClient) -> Callable:
+    def report_exception(f: Callable) -> Callable:
+        def wrapper(*args, **kwargs):
+            try:
+                f(*args, **kwargs)
+            except WrappedHTTPError as e:
+                client.send(text=e.reason)
+                raise
+            except BaseException as e:
+                client.send(text=e)
+                raise
+
+        return wrapper
+
+    return report_exception
 
 
 @click.command()
@@ -18,6 +38,7 @@ from feedly_regexp_marker.lib.feedly_controller import FeedlyController
 )
 @click.option("-n", "--dry-run", is_flag=True)
 def main(rules: Path, every_n_minutes: Optional[int], dry_run: bool):
+    @report_exception(client=WebhookClient(url=os.environ["SLACK_WEBHOOK_URL"]))
     def inner_main():
         feedly_controller = FeedlyController(auth=FileAuthStore())
 
