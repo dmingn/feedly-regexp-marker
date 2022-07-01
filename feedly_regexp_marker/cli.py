@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Optional
 
 import click
-import schedule
 from feedly.api_client.session import FileAuthStore
 
 from feedly_regexp_marker.lib.classifier import Classifier
@@ -38,11 +37,9 @@ def main(rules: Path, every_n_minutes: Optional[int], dry_run: bool):
             )
 
         if every_n_minutes:
-            schedule.every(every_n_minutes).minutes.do(job)
-
             while True:
-                schedule.run_pending()
-                time.sleep(1)
+                job()
+                time.sleep(every_n_minutes * 60)
         else:
             job()
 
