@@ -3,4 +3,5 @@ services:
   app:
     build: .
     volumes:
+      - ~/.config/feedly:/root/.config/feedly:ro
       - ./rules:/feedly_regexp_marker/rules
