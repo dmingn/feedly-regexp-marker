@@ -1,4 +1,3 @@
-import asyncio
 import time
 from pathlib import Path
 from typing import Optional
@@ -27,15 +26,11 @@ from feedly_regexp_marker.lib.feedly_controller import FeedlyController
     type=click.Path(path_type=Path),
     default=Path.home() / ".config" / "feedly",
 )
-@click.option("--use-slack", is_flag=True)
-@click.option("--slack-channel", type=str, default=None)
 def main(
     rules: Path,
     every_n_minutes: Optional[int],
     dry_run: bool,
     access_token_dir: Path,
-    use_slack: bool,
-    slack_channel: Optional[str],
 ):
     def inner_main():
         feedly_controller = FeedlyController(
@@ -66,21 +61,4 @@ def main(
         else:
             job()
 
-    if use_slack:
-        from feedly_regexp_marker.lib.slack import (
-            manage_access_token_using_slack,
-        )
-
-        if not slack_channel:
-            raise ValueError(
-                "If --use-slack is set, --slack-channel cannot be empty."
-            )
-
-        asyncio.run(
-            manage_access_token_using_slack(
-                access_token_path=access_token_dir / "access.token",
-                slack_channel=slack_channel,
-            )(inner_main)()
-        )
-    else:
-        run_example(inner_main)
+    run_example(inner_main)
