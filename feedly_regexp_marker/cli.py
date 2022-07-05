@@ -29,39 +29,51 @@ def report_exception(client: WebhookClient) -> Callable:
     return report_exception
 
 
+def sleep_and_repeat(minutes_to_sleep: Optional[int]) -> Callable:
+    def sleep_and_repeat(f: Callable) -> Callable:
+        def wrapper(*args, **kwargs):
+            if minutes_to_sleep:
+                while True:
+                    try:
+                        f(*args, **kwargs)
+                    except BaseException:
+                        time.sleep(minutes_to_sleep * 60)
+                    else:
+                        time.sleep(minutes_to_sleep * 60)
+            else:
+                f(*args, **kwargs)
+
+        return wrapper
+
+    return sleep_and_repeat
+
+
 @click.command()
 @click.option("--rules", type=click.Path(exists=True, path_type=Path), required=True)
 @click.option(
-    "--every-n-minutes",
+    "--minutes-to-sleep",
     type=click.IntRange(min=1),
     default=None,
 )
 @click.option("-n", "--dry-run", is_flag=True)
-def main(rules: Path, every_n_minutes: Optional[int], dry_run: bool):
+def main(rules: Path, minutes_to_sleep: Optional[int], dry_run: bool):
+    @sleep_and_repeat(minutes_to_sleep=minutes_to_sleep)
     @report_exception(client=WebhookClient(url=os.environ["SLACK_WEBHOOK_URL"]))
-    def inner_main():
+    def job():
         feedly_controller = FeedlyController(auth=FileAuthStore())
 
-        def job():
-            entries = feedly_controller.fetch_unread_entries()
+        entries = feedly_controller.fetch_unread_entries()
 
-            clf = Classifier.from_yaml(rules)
+        clf = Classifier.from_yaml(rules)
 
-            feedly_controller.save_entries(
-                entries=[entry for entry in entries if clf.to_save(entry)],
-                dry_run=dry_run,
-            )
+        feedly_controller.save_entries(
+            entries=[entry for entry in entries if clf.to_save(entry)],
+            dry_run=dry_run,
+        )
 
-            feedly_controller.read_entries(
-                entries=[entry for entry in entries if clf.to_read(entry)],
-                dry_run=dry_run,
-            )
+        feedly_controller.read_entries(
+            entries=[entry for entry in entries if clf.to_read(entry)],
+            dry_run=dry_run,
+        )
 
-        if every_n_minutes:
-            while True:
-                job()
-                time.sleep(every_n_minutes * 60)
-        else:
-            job()
-
-    inner_main()
+    job()
