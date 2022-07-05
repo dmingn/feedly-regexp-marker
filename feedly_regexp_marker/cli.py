@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import click
-from feedly.api_client.protocol import WrappedHTTPError
+from feedly.api_client.protocol import UnauthorizedAPIError, WrappedHTTPError
 from feedly.api_client.session import FileAuthStore
 from slack_sdk import WebhookClient
+from watchfiles import watch
 
 from feedly_regexp_marker.lib.classifier import Classifier
 from feedly_regexp_marker.lib.feedly_controller import FeedlyController
@@ -36,6 +37,12 @@ def sleep_and_repeat(minutes_to_sleep: Optional[int]) -> Callable:
                 while True:
                     try:
                         f(*args, **kwargs)
+                    except UnauthorizedAPIError:
+                        for _ in watch(
+                            Path.home() / ".config" / "feedly" / "access.token",
+                            rust_timeout=0,
+                        ):
+                            break
                     except BaseException:
                         time.sleep(minutes_to_sleep * 60)
                     else:
