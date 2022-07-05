@@ -22,7 +22,7 @@ def report_exception(client: WebhookClient) -> Callable:
                 client.send(text=e.reason)
                 raise
             except BaseException as e:
-                client.send(text=e)
+                client.send(text=str(e))
                 raise
 
         return wrapper
