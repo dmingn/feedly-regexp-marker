@@ -12,6 +12,8 @@ from watchfiles import watch
 from feedly_regexp_marker.lib.classifier import Classifier
 from feedly_regexp_marker.lib.feedly_controller import FeedlyController
 
+access_token_path = Path.home() / ".config" / "feedly" / "access.token"
+
 
 def report_exception(client: WebhookClient) -> Callable:
     def report_exception(f: Callable) -> Callable:
@@ -30,6 +32,16 @@ def report_exception(client: WebhookClient) -> Callable:
     return report_exception
 
 
+def wait_for_creation(path: Path):
+    while not path.exists():
+        time.sleep(1)
+
+
+def wait_for_change(path: Path):
+    for _ in watch(path, rust_timeout=0):
+        break
+
+
 def sleep_and_repeat(minutes_to_sleep: Optional[int]) -> Callable:
     def sleep_and_repeat(f: Callable) -> Callable:
         def wrapper(*args, **kwargs):
@@ -38,11 +50,12 @@ def sleep_and_repeat(minutes_to_sleep: Optional[int]) -> Callable:
                     try:
                         f(*args, **kwargs)
                     except UnauthorizedAPIError:
-                        for _ in watch(
-                            Path.home() / ".config" / "feedly" / "access.token",
-                            rust_timeout=0,
-                        ):
-                            break
+                        wait_for_change(access_token_path)
+                    except FileNotFoundError as e:
+                        if e.filename == str(access_token_path):
+                            wait_for_creation(access_token_path)
+                        else:
+                            time.sleep(minutes_to_sleep * 60)
                     except BaseException:
                         time.sleep(minutes_to_sleep * 60)
                     else:
