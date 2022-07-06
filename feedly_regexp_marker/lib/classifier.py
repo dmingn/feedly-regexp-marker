@@ -144,20 +144,20 @@ class Classifier:
         self.__compiled_rules_dict = compiled_rules_dict
 
     @classmethod
-    def from_yaml(cls, yaml_path: Path) -> Classifier:
-        if yaml_path.is_dir():
+    def from_yml(cls, yml_path: Path) -> Classifier:
+        if yml_path.is_dir():
             return cls(
                 merge_rules_dict(
                     *[
                         Rules.parse_file(p).to_rules_dict()
                         for p in itertools.chain(
-                            yaml_path.glob("*.yaml"), yaml_path.glob("*.yml")
+                            yml_path.glob("*.yaml"), yml_path.glob("*.yml")
                         )
                     ]
                 ).compile()
             )
         else:
-            return cls(Rules.parse_file(yaml_path).to_rules_dict().compile())
+            return cls(Rules.parse_file(yml_path).to_rules_dict().compile())
 
     def __to_act(self, entry: Entry, action: Action) -> bool:
         if action not in self.__compiled_rules_dict:
