@@ -165,17 +165,17 @@ class Classifier:
 
         if (
             not entry.origin
-            or entry.origin.stream_id not in self.__compiled_rules_dict[action]
+            or entry.origin.streamId not in self.__compiled_rules_dict[action]
         ):
             return False
 
-        title_pattern = self.__compiled_rules_dict[action][entry.origin.stream_id][
+        title_pattern = self.__compiled_rules_dict[action][entry.origin.streamId][
             "title"
         ]
         if entry.title and title_pattern and title_pattern.search(entry.title):
             return True
 
-        content_pattern = self.__compiled_rules_dict[action][entry.origin.stream_id][
+        content_pattern = self.__compiled_rules_dict[action][entry.origin.streamId][
             "content"
         ]
         if (
