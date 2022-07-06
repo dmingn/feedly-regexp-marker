@@ -36,7 +36,7 @@ def main(rules: Path, minutes_to_sleep: Optional[int], dry_run: bool):
 
         entries = feedly_controller.fetch_unread_entries()
 
-        clf = Classifier.from_yaml(rules)
+        clf = Classifier.from_yml(rules)
 
         feedly_controller.save_entries(
             entries=[entry for entry in entries if clf.to_save(entry)],
