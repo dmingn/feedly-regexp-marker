@@ -1,39 +1,31 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 from feedly.api_client.session import Auth, FeedlySession
+from pydantic import BaseModel
 
 StreamId = str
 EntryId = str
 Action = Literal["markAsSaved", "markAsRead"]
 
 
-@dataclass(frozen=True)
-class EntryContent:
+class EntryContent(BaseModel):
     content: str
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> EntryContent:
-        return cls(content=data["content"])
+    class Config:
+        frozen = True
 
 
-@dataclass(frozen=True)
-class EntryOrigin:
-    stream_id: StreamId
+class EntryOrigin(BaseModel):
+    streamId: StreamId
     title: str
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> EntryOrigin:
-        return cls(
-            stream_id=data["streamId"],
-            title=data["title"],
-        )
+    class Config:
+        frozen = True
 
 
-@dataclass(frozen=True)
-class Entry:
+class Entry(BaseModel):
     """https://developer.feedly.com/v3/entries/#get-the-content-of-an-entry"""
 
     id: EntryId
@@ -42,34 +34,18 @@ class Entry:
     summary: Optional[EntryContent] = None
     origin: Optional[EntryOrigin] = None
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Entry:
-        return cls(
-            id=data["id"],
-            title=data.get("title", None),
-            content=EntryContent.from_dict(data["content"])
-            if "content" in data
-            else None,
-            summary=EntryContent.from_dict(data["summary"])
-            if "summary" in data
-            else None,
-            origin=EntryOrigin.from_dict(data["origin"]) if "origin" in data else None,
-        )
+    class Config:
+        frozen = True
 
 
-@dataclass(frozen=True)
-class StreamContents:
+class StreamContents(BaseModel):
     """https://developers.feedly.com/v3/streams/#get-the-content-of-a-stream"""
 
     items: list[Entry]
     continuation: Optional[str] = None
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> StreamContents:
-        return cls(
-            items=[Entry.from_dict(item) for item in data["items"]],
-            continuation=data.get("continuation", None),
-        )
+    class Config:
+        frozen = True
 
 
 class FeedlyController:
@@ -78,8 +54,8 @@ class FeedlyController:
         self.continuation: Optional[str] = None
 
     def fetch_unread_entries(self, count: int = 1000) -> list[Entry]:
-        stream_contents = StreamContents.from_dict(
-            self.session.do_api_request(
+        stream_contents = StreamContents(
+            **self.session.do_api_request(
                 relative_url="/v3/streams/contents",
                 params=(
                     {
