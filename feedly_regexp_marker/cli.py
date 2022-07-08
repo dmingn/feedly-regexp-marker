@@ -34,7 +34,7 @@ def main(rules: Path, minutes_to_sleep: Optional[int], dry_run: bool):
     def job():
         feedly_controller = FeedlyController(auth=FileAuthStore())
 
-        entries = feedly_controller.fetch_unread_entries()
+        entries = feedly_controller.fetch_all_unread_entries()
 
         clf = Classifier.from_yml(rules)
 
