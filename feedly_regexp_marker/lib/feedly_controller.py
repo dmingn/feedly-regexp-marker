@@ -51,31 +51,32 @@ class StreamContents(BaseModel):
 class FeedlyController:
     def __init__(self, auth: Auth) -> None:
         self.session = FeedlySession(auth=auth)
-        self.continuation: Optional[str] = None
 
-    def fetch_unread_entries(self, count: int = 1000) -> list[Entry]:
+    def _fetch_all_unread_entries(self, continuation: str | None) -> list[Entry]:
         stream_contents = StreamContents(
             **self.session.do_api_request(
                 relative_url="/v3/streams/contents",
                 params=(
                     {
                         "streamId": f"user/{self.session.user.id}/category/global.all",
-                        "count": f"{count}",
+                        "count": "1000",
                         "ranked": "oldest",
                         "unreadOnly": "true",
                     }
-                    | (
-                        {"continuation": self.continuation}
-                        if self.continuation
-                        else dict()
-                    )
+                    | ({"continuation": continuation} if continuation else dict())
                 ),
             )
         )
 
-        self.continuation = stream_contents.continuation or self.continuation
+        if stream_contents.continuation:
+            return stream_contents.items + self._fetch_all_unread_entries(
+                continuation=stream_contents.continuation
+            )
+        else:
+            return stream_contents.items
 
-        return stream_contents.items
+    def fetch_all_unread_entries(self) -> list[Entry]:
+        return self._fetch_all_unread_entries(continuation=None)
 
     def __mark_entries(
         self, entries: list[Entry], action: Action, dry_run: bool
