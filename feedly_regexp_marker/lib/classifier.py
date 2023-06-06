@@ -6,6 +6,7 @@ from pathlib import Path
 from re import Pattern
 from typing import Literal, Optional, TypeVar, cast, overload
 
+from logzero import logger
 from pydantic import BaseModel
 from pydantic_yaml import YamlModel
 
@@ -67,6 +68,12 @@ class Rules(YamlModel):
 
     def to_rules_dict(self) -> RulesDict:
         return merge_rules_dict(*[rule.to_rules_dict() for rule in self])
+
+    @classmethod
+    def parse_file(cls, path: str | Path, **kwargs) -> Rules:
+        rules = super().parse_file(path, **kwargs)
+        logger.info(f"loaded {path}.")
+        return rules
 
 
 @overload
