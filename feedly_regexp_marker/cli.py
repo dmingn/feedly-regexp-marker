@@ -4,6 +4,7 @@ from typing import Optional
 
 import click
 from feedly.api_client.session import FileAuthStore
+from logzero import logger
 from slack_sdk import WebhookClient
 
 from feedly_regexp_marker.lib.classifier import Classifier
@@ -35,17 +36,22 @@ def main(rules: Path, minutes_to_sleep: Optional[int], dry_run: bool):
         feedly_controller = FeedlyController(auth=FileAuthStore())
 
         entries = feedly_controller.fetch_all_unread_entries()
+        logger.info(f"fetched {len(entries)} entries.")
 
         clf = Classifier.from_yml(rules)
 
+        entries_to_save = [entry for entry in entries if clf.to_save(entry)]
         feedly_controller.save_entries(
-            entries=[entry for entry in entries if clf.to_save(entry)],
+            entries=entries_to_save,
             dry_run=dry_run,
         )
+        logger.info(f"saved {len(entries_to_save)} entries.")
 
+        entries_to_read = [entry for entry in entries if clf.to_read(entry)]
         feedly_controller.read_entries(
-            entries=[entry for entry in entries if clf.to_read(entry)],
+            entries=entries_to_read,
             dry_run=dry_run,
         )
+        logger.info(f"read {len(entries_to_read)} entries.")
 
     job()
