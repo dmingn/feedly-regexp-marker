@@ -66,7 +66,8 @@ def sleep_and_repeat(
                         else:
                             logger.info(f"sleep for {minutes_to_sleep} minutes.")
                             time.sleep(minutes_to_sleep * 60)
-                    except BaseException:
+                    except BaseException as e:
+                        logger.exception(e)
                         logger.info(f"sleep for {minutes_to_sleep} minutes.")
                         time.sleep(minutes_to_sleep * 60)
                     else:
