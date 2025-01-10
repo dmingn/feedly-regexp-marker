@@ -28,7 +28,7 @@ watchfiles = "^0.15.0"
 black = "^22.1.0"
 isort = {extras = ["pyproject"], version = "^5.10.1"}
 mypy = "^1.14"
-pydocstyle = "^6.1.1"
+pydocstyle = "^6.3.0"
 pyproject-flake8 = "^0.0.1-alpha.2"
 
 [tool.pydantic-mypy]
