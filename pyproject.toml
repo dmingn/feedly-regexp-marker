@@ -21,7 +21,7 @@ feedly-client = "^0.23.2"
 logzero = "^1.7.0"
 pydantic = "^1.9.0"
 pydantic-yaml = {extras = ["ruamel"], version = "^0.6.3"}
-slack-sdk = "^3.17.2"
+slack-sdk = "^3.34.0"
 watchfiles = "^0.15.0"
 
 [tool.poetry.dev-dependencies]
