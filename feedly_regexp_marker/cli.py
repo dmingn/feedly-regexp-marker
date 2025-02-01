@@ -1,6 +1,7 @@
 from pathlib import Path
+from typing import Annotated
 
-import click
+import typer
 from feedly.api_client.session import FileAuthStore
 from logzero import logger
 
@@ -10,10 +11,7 @@ from feedly_regexp_marker.lib.feedly_controller import FeedlyController
 access_token_path = Path.home() / ".config" / "feedly" / "access.token"
 
 
-@click.command()
-@click.option("--rules", type=click.Path(exists=True, path_type=Path), required=True)
-@click.option("-n", "--dry-run", is_flag=True)
-def main(rules: Path, dry_run: bool):
+def main(rules: Annotated[Path, typer.Argument(exists=True)], dry_run: bool = False):
     try:
         feedly_controller = FeedlyController(auth=FileAuthStore())
 
