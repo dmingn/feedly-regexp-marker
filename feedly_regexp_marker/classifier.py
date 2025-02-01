@@ -10,7 +10,7 @@ from logzero import logger
 from pydantic import BaseModel
 from pydantic_yaml import YamlModel
 
-from feedly_regexp_marker.lib.feedly_controller import Action, Entry, StreamId
+from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
 
 T = TypeVar("T")
 T1 = TypeVar("T1")
@@ -77,23 +77,19 @@ class Rules(YamlModel):
 
 
 @overload
-def merge_rules_dict(*args: frozenset[T]) -> frozenset[T]:
-    ...
+def merge_rules_dict(*args: frozenset[T]) -> frozenset[T]: ...
 
 
 @overload
-def merge_rules_dict(*args: dict[T1, frozenset[T2]]) -> dict[T1, frozenset[T2]]:
-    ...
+def merge_rules_dict(*args: dict[T1, frozenset[T2]]) -> dict[T1, frozenset[T2]]: ...
 
 
 @overload
-def merge_rules_dict(*args: dict[T1, dict[T2, T3]]) -> dict[T1, dict[T2, T3]]:
-    ...
+def merge_rules_dict(*args: dict[T1, dict[T2, T3]]) -> dict[T1, dict[T2, T3]]: ...
 
 
 @overload
-def merge_rules_dict(*args: RulesDict) -> RulesDict:
-    ...
+def merge_rules_dict(*args: RulesDict) -> RulesDict: ...
 
 
 def merge_rules_dict(*args):
@@ -119,18 +115,15 @@ class RulesDict(BaseModel):
 
     def compile(self) -> CompiledRulesDict:
         @overload
-        def __rec(data: frozenset[PatternText]) -> Pattern[PatternText]:
-            ...
+        def __rec(data: frozenset[PatternText]) -> Pattern[PatternText]: ...
 
         @overload
         def __rec(
             data: dict[T1, frozenset[PatternText]]
-        ) -> dict[T1, Pattern[PatternText]]:
-            ...
+        ) -> dict[T1, Pattern[PatternText]]: ...
 
         @overload
-        def __rec(data: dict[T1, dict]) -> dict[T1, dict]:
-            ...
+        def __rec(data: dict[T1, dict]) -> dict[T1, dict]: ...
 
         def __rec(data):
             if isinstance(data, frozenset):
