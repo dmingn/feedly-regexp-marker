@@ -32,7 +32,7 @@ jobs:
         run: poetry install
 
       - name: Run flake8
-        run: poetry run flake8 feedly_regexp_marker
+        run: make flake8
 
       - name: Run mypy
-        run: poetry run mypy .
+        run: make mypy

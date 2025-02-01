@@ -1,3 +1,14 @@
+.PHONY: lint
+lint: flake8 mypy
+
+.PHONY: flake8
+flake8:
+	@poetry run flake8 feedly_regexp_marker
+
+.PHONY: mypy
+mypy:
+	@poetry run mypy .
+
 .PHONY: access.token
 access.token:
 	@touch $@
