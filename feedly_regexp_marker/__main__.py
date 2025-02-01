@@ -5,8 +5,8 @@ import typer
 from feedly.api_client.session import FileAuthStore
 from logzero import logger
 
-from feedly_regexp_marker.lib.classifier import Classifier
-from feedly_regexp_marker.lib.feedly_controller import FeedlyController
+from feedly_regexp_marker.classifier import Classifier
+from feedly_regexp_marker.feedly_controller import FeedlyController
 
 
 def main(
