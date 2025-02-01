@@ -8,12 +8,16 @@ from logzero import logger
 from feedly_regexp_marker.lib.classifier import Classifier
 from feedly_regexp_marker.lib.feedly_controller import FeedlyController
 
-access_token_path = Path.home() / ".config" / "feedly" / "access.token"
 
-
-def main(rules: Annotated[Path, typer.Argument(exists=True)], dry_run: bool = False):
+def main(
+    rules: Annotated[Path, typer.Argument(exists=True)],
+    token_dir: Annotated[Path, typer.Option(exists=True, file_okay=False)] = Path.home()
+    / ".config"
+    / "feedly",
+    dry_run: bool = False,
+):
     try:
-        feedly_controller = FeedlyController(auth=FileAuthStore())
+        feedly_controller = FeedlyController(auth=FileAuthStore(token_dir=token_dir))
 
         entries = feedly_controller.fetch_all_unread_entries()
         logger.info(f"fetched {len(entries)} entries.")
