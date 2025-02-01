@@ -24,7 +24,7 @@ pydantic-yaml = {extras = ["ruamel"], version = "^1.4.0"}
 slack-sdk = "^3.34.0"
 watchfiles = "^0.15.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^22.1.0"
 isort = {extras = ["pyproject"], version = "^5.10.1"}
 mypy = "^1.14"
