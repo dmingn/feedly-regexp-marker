@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and test
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
+  lint-and-test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,3 +36,6 @@ jobs:
 
       - name: Run mypy
         run: make mypy
+
+      - name: Run pytest
+        run: make pytest
