@@ -7,6 +7,10 @@ profile = "black"
 [tool.mypy]
 plugins = "pydantic.mypy"
 
+[[tool.mypy.overrides]]
+module = ["feedly.*", "logzero.*"]
+ignore_missing_imports = true
+
 [tool.poetry]
 name = "feedly_regexp_marker"
 version = "0.1.0"
@@ -20,7 +24,7 @@ click = "^8.1.8"
 feedly-client = "^0.23.2"
 logzero = "^1.7.0"
 pydantic = "^1.9.0"
-pydantic-yaml = {extras = ["ruamel"], version = "^1.4.0"}
+pydantic-yaml = {extras = ["ruamel"], version = "^0.6.3"}
 slack-sdk = "^3.34.0"
 watchfiles = "^0.15.0"
 
@@ -29,7 +33,7 @@ black = "^22.1.0"
 isort = {extras = ["pyproject"], version = "^5.10.1"}
 mypy = "^1.14"
 pydocstyle = "^6.3.0"
-pyproject-flake8 = "^0.0.1-alpha.2"
+pyproject-flake8 = "^7.0.0"
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
