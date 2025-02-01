@@ -24,7 +24,7 @@ pydantic-yaml = {extras = ["ruamel"], version = "^0.6.3"}
 typer = "^0.15.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^22.1.0"
+black = "^25.1.0"
 flake8 = "^7.1.1"
 isort = {extras = ["pyproject"], version = "^5.10.1"}
 mypy = "^1.14"
