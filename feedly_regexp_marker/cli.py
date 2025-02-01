@@ -1,14 +1,11 @@
-import os
 from pathlib import Path
 
 import click
 from feedly.api_client.session import FileAuthStore
 from logzero import logger
-from slack_sdk import WebhookClient
 
 from feedly_regexp_marker.lib.classifier import Classifier
 from feedly_regexp_marker.lib.feedly_controller import FeedlyController
-from feedly_regexp_marker.lib.util import report_exception
 
 access_token_path = Path.home() / ".config" / "feedly" / "access.token"
 
@@ -17,8 +14,7 @@ access_token_path = Path.home() / ".config" / "feedly" / "access.token"
 @click.option("--rules", type=click.Path(exists=True, path_type=Path), required=True)
 @click.option("-n", "--dry-run", is_flag=True)
 def main(rules: Path, dry_run: bool):
-    @report_exception(client=WebhookClient(url=os.environ["SLACK_WEBHOOK_URL"]))
-    def job():
+    try:
         feedly_controller = FeedlyController(auth=FileAuthStore())
 
         entries = feedly_controller.fetch_all_unread_entries()
@@ -39,5 +35,6 @@ def main(rules: Path, dry_run: bool):
             dry_run=dry_run,
         )
         logger.info(f"read {len(entries_to_read)} entries.")
-
-    job()
+    except Exception as e:
+        logger.exception(e)
+        raise e
