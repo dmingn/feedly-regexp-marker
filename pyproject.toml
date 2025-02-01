@@ -7,6 +7,10 @@ profile = "black"
 [tool.mypy]
 plugins = "pydantic.mypy"
 
+[[tool.mypy.overrides]]
+module = ["feedly.*", "logzero.*"]
+ignore_missing_imports = true
+
 [tool.poetry]
 name = "feedly_regexp_marker"
 version = "0.1.0"
