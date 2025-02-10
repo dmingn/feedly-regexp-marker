@@ -9,7 +9,7 @@ from feedly_regexp_marker.classifier import Classifier
 from feedly_regexp_marker.feedly_controller import FeedlyController
 
 
-def main(
+def cli(
     rules: Annotated[Path, typer.Argument(exists=True)],
     token_dir: Annotated[Path, typer.Option(exists=True, file_okay=False)] = Path.home()
     / ".config"
@@ -42,5 +42,9 @@ def main(
         raise e
 
 
+def main():
+    typer.run(cli)
+
+
 if __name__ == "__main__":
-    typer.run(main)
+    main()
