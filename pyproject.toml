@@ -27,7 +27,7 @@ typer = "^0.15.1"
 black = "^25.1.0"
 flake8 = "^7.1.1"
 isort = {extras = ["pyproject"], version = "^6.0.0"}
-mypy = "^1.14"
+mypy = "^1.15"
 pydocstyle = "^6.3.0"
 
 [tool.poetry.scripts]
