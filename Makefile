@@ -26,3 +26,9 @@ bump-version:
 	TAG="$(DATE).$$N"; \
 	echo "Bumping version to $$TAG"; \
 	poetry version $$TAG
+
+.PHONY: create-release
+create-release:
+	@TAG="$(shell poetry version -s)"; \
+	echo "Creating GitHub release for tag: $$TAG"; \
+	gh release create $$TAG --generate-notes
