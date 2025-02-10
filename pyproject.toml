@@ -30,6 +30,9 @@ isort = {extras = ["pyproject"], version = "^6.0.0"}
 mypy = "^1.14"
 pydocstyle = "^6.3.0"
 
+[tool.poetry.scripts]
+feedly-regexp-marker = "feedly_regexp_marker.__main__:main"
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
