@@ -1,0 +1,51 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version-file: pyproject.toml
+          cache: poetry
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          make bump-version
+          echo "newversion=$(poetry version -s)" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b feature/bump-version-${{ steps.bump_version.outputs.newversion }}
+          git add .
+          git commit -m "Bump version to ${{ steps.bump_version.outputs.newversion }}"
+          git push origin feature/bump-version-${{ steps.bump_version.outputs.newversion }}
+
+      - name: Create Pull Request
+        run: |
+          gh pr create \
+            --title "Bump version to ${{ steps.bump_version.outputs.newversion }}" \
+            --body "This PR bumps the version to ${{ steps.bump_version.outputs.newversion }}." \
+            --head "feature/bump-version-${{ steps.bump_version.outputs.newversion }}" \
+            --base main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
