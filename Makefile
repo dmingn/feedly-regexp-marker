@@ -20,7 +20,7 @@ EXISTING_TAGS := $(shell gh release list --json tagName -q '.[] | .tagName' | gr
 .PHONY: bump-version
 bump-version:
 	@N=1; \
-	while echo "$(EXISTING_TAGS)" | grep -q "^$(DATE).$$$${N}"; do \
+	while echo "$(EXISTING_TAGS)" | grep -q "$(DATE).$$N"; do \
 		N=$$(($$N + 1)); \
 	done; \
 	TAG="$(DATE).$$N"; \
