@@ -30,6 +30,8 @@ jobs:
         run: |
           make bump-version
           echo "newversion=$(poetry version -s)" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Commit and push changes
         run: |
