@@ -10,7 +10,7 @@ ignore_missing_imports = true
 
 [tool.poetry]
 name = "feedly_regexp_marker"
-version = "2025.02.10.1"
+version = "2025.02.11.1"
 description = ""
 authors = ["dmingn <dmingn@users.noreply.github.com>"]
 
