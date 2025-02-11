@@ -15,7 +15,7 @@ description = ""
 authors = ["dmingn <dmingn@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 aiohttp = "^3.10.11"
 feedly-client = "^0.23.2"
 logzero = "^1.7.0"
