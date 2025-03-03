@@ -21,7 +21,7 @@ feedly-client = "^0.23.2"
 logzero = "^1.7.0"
 pydantic = "^1.9.0"
 pydantic-yaml = {extras = ["ruamel"], version = "^0.6.3"}
-typer = "^0.15.1"
+typer = "^0.15.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
