@@ -6,18 +6,16 @@ from pathlib import Path
 from re import Pattern
 from typing import Literal, Optional, TypeVar, cast, overload
 
-from logzero import logger
-from pydantic import BaseModel
-from pydantic_yaml import YamlModel
+from pydantic import RootModel
 
 from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
+from feedly_regexp_marker.rules import PatternText, Rule, Rules
 
 T = TypeVar("T")
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
 T3 = TypeVar("T3")
 
-PatternText = str
 EntryAttr = Literal["title", "content"]
 CompiledRulesDict = dict[
     Action,
@@ -25,55 +23,23 @@ CompiledRulesDict = dict[
 ]
 
 
-class EntryPatternTexts(BaseModel):
-    class Config:
-        frozen = True
-
-    title: frozenset[PatternText] = frozenset()
-    content: frozenset[PatternText] = frozenset()
-
-
-class Rule(BaseModel):
-    class Config:
-        frozen = True
-
-    stream_ids: frozenset[StreamId]
-    actions: frozenset[Action]
-    patterns: EntryPatternTexts
-    name: Optional[str] = None
-
-    def to_rules_dict(self) -> RulesDict:
-        return RulesDict(
-            __root__={
-                action: {
-                    stream_id: {
-                        cast(EntryAttr, entry_attr): pattern_text_set
-                        for entry_attr, pattern_text_set in self.patterns
-                    }
-                    for stream_id in self.stream_ids
+def rule_to_rules_dict(rule: Rule) -> RulesDict:
+    return RulesDict(
+        root={
+            action: {
+                stream_id: {
+                    cast(EntryAttr, entry_attr): pattern_text_set
+                    for entry_attr, pattern_text_set in rule.patterns
                 }
-                for action in self.actions
+                for stream_id in rule.stream_ids
             }
-        )
+            for action in rule.actions
+        }
+    )
 
 
-class Rules(YamlModel):
-    class Config:
-        frozen = True
-
-    __root__: frozenset[Rule]
-
-    def __iter__(self):
-        yield from self.__root__
-
-    def to_rules_dict(self) -> RulesDict:
-        return merge_rules_dict(*[rule.to_rules_dict() for rule in self])
-
-    @classmethod
-    def parse_file(cls, path: str | Path, **kwargs) -> Rules:
-        rules = super().parse_file(path, **kwargs)
-        logger.info(f"loaded {path}.")
-        return rules
+def rules_to_rules_dict(rules: Rules) -> RulesDict:
+    return merge_rules_dict(*[rule_to_rules_dict(rule) for rule in rules])
 
 
 @overload
@@ -102,24 +68,26 @@ def merge_rules_dict(*args):
             for k in c.keys()
         }
     elif all(isinstance(x, RulesDict) for x in args):
-        return RulesDict(__root__=merge_rules_dict(*[c.__root__ for c in args]))
+        return RulesDict(root=merge_rules_dict(*[c.root for c in args]))
     else:
         raise TypeError
 
 
-class RulesDict(BaseModel):
-    __root__: dict[
-        Action,
-        dict[StreamId, dict[EntryAttr, frozenset[PatternText]]],
+class RulesDict(
+    RootModel[
+        dict[
+            Action,
+            dict[StreamId, dict[EntryAttr, frozenset[PatternText]]],
+        ]
     ]
-
+):
     def compile(self) -> CompiledRulesDict:
         @overload
         def __rec(data: frozenset[PatternText]) -> Pattern[PatternText]: ...
 
         @overload
         def __rec(
-            data: dict[T1, frozenset[PatternText]]
+            data: dict[T1, frozenset[PatternText]],
         ) -> dict[T1, Pattern[PatternText]]: ...
 
         @overload
@@ -133,7 +101,7 @@ class RulesDict(BaseModel):
             else:
                 raise
 
-        return __rec(self.__root__)
+        return __rec(self.root)
 
 
 class Classifier:
@@ -149,7 +117,7 @@ class Classifier:
             return cls(
                 merge_rules_dict(
                     *[
-                        Rules.parse_file(p).to_rules_dict()
+                        rules_to_rules_dict(Rules.from_yaml(p))
                         for p in itertools.chain(
                             yml_path.glob("*.yaml"), yml_path.glob("*.yml")
                         )
@@ -157,7 +125,7 @@ class Classifier:
                 ).compile()
             )
         else:
-            return cls(Rules.parse_file(yml_path).to_rules_dict().compile())
+            return cls(rules_to_rules_dict(Rules.from_yaml(yml_path)).compile())
 
     def __to_act(self, entry: Entry, action: Action) -> bool:
         if action not in self.__compiled_rules_dict:
