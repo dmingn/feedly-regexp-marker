@@ -6,7 +6,7 @@ check_untyped_defs = true
 plugins = "pydantic.mypy"
 
 [[tool.mypy.overrides]]
-module = ["feedly.*", "logzero.*"]
+module = ["feedly.*", "logzero.*", "ruamel.*"]
 ignore_missing_imports = true
 
 [tool.poetry]
