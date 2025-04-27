@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import re
+from collections import defaultdict
 from pathlib import Path
 from re import Pattern
 from typing import Literal, Optional, cast
@@ -23,21 +24,17 @@ CompiledRulesDict = dict[
 
 
 def merge_rules_dict(*args: RulesDict) -> RulesDict:
-    root: RulesDictRoot = {}
+    root: defaultdict[
+        Action, defaultdict[StreamId, defaultdict[EntryAttr, frozenset[PatternText]]]
+    ] = defaultdict(lambda: defaultdict(lambda: defaultdict(frozenset)))
 
     for rules_dict in args:
         for action, stream_ids in rules_dict.root.items():
-            if action not in root:
-                root[action] = {}
             for stream_id, entry_attrs in stream_ids.items():
-                if stream_id not in root[action]:
-                    root[action][stream_id] = {}
                 for entry_attr, pattern_text_set in entry_attrs.items():
-                    if entry_attr not in root[action][stream_id]:
-                        root[action][stream_id][entry_attr] = frozenset()
                     root[action][stream_id][entry_attr] |= pattern_text_set
 
-    return RulesDict(root=root)
+    return RulesDict.model_validate(root)
 
 
 class RulesDict(RootModel[RulesDictRoot]):
@@ -61,17 +58,28 @@ class RulesDict(RootModel[RulesDictRoot]):
         return merge_rules_dict(*[cls.from_rule(rule) for rule in rules])
 
     def compile(self) -> CompiledRulesDict:
-        compiled_rules: CompiledRulesDict = {}
-        for action, stream_data in self.root.items():
-            compiled_rules[action] = {}
-            for stream_id, entry_attr_data in stream_data.items():
-                compiled_rules[action][stream_id] = {}
+        compiled_rules: defaultdict[
+            Action,
+            defaultdict[
+                StreamId, defaultdict[EntryAttr, Optional[Pattern[PatternText]]]
+            ],
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
+
+        for action, stream_id_data in self.root.items():
+            for stream_id, entry_attr_data in stream_id_data.items():
                 for entry_attr, pattern_texts in entry_attr_data.items():
                     if pattern_texts:
                         compiled_rules[action][stream_id][entry_attr] = re.compile(
                             "|".join(pattern_texts)
                         )
-        return compiled_rules
+
+        return {
+            action: {
+                stream_id: dict(entry_attr_data)
+                for stream_id, entry_attr_data in stream_id_data.items()
+            }
+            for action, stream_id_data in compiled_rules.items()
+        }
 
 
 class Classifier:
