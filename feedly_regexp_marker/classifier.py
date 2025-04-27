@@ -11,57 +11,38 @@ from pydantic import RootModel
 from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
 from feedly_regexp_marker.rules import PatternText, Rule, Rules
 
-T = TypeVar("T")
 T1 = TypeVar("T1")
-T2 = TypeVar("T2")
-T3 = TypeVar("T3")
 
 EntryAttr = Literal["title", "content"]
+RulesDictRoot = dict[
+    Action,
+    dict[StreamId, dict[EntryAttr, frozenset[PatternText]]],
+]
 CompiledRulesDict = dict[
     Action,
     dict[StreamId, dict[EntryAttr, Optional[Pattern[PatternText]]]],
 ]
 
 
-@overload
-def merge_rules_dict(*args: frozenset[T]) -> frozenset[T]: ...
+def merge_rules_dict(*args: RulesDict) -> RulesDict:
+    root: RulesDictRoot = {}
+
+    for rules_dict in args:
+        for action, stream_ids in rules_dict.root.items():
+            if action not in root:
+                root[action] = {}
+            for stream_id, entry_attrs in stream_ids.items():
+                if stream_id not in root[action]:
+                    root[action][stream_id] = {}
+                for entry_attr, pattern_text_set in entry_attrs.items():
+                    if entry_attr not in root[action][stream_id]:
+                        root[action][stream_id][entry_attr] = frozenset()
+                    root[action][stream_id][entry_attr] |= pattern_text_set
+
+    return RulesDict(root=root)
 
 
-@overload
-def merge_rules_dict(*args: dict[T1, frozenset[T2]]) -> dict[T1, frozenset[T2]]: ...
-
-
-@overload
-def merge_rules_dict(*args: dict[T1, dict[T2, T3]]) -> dict[T1, dict[T2, T3]]: ...
-
-
-@overload
-def merge_rules_dict(*args: RulesDict) -> RulesDict: ...
-
-
-def merge_rules_dict(*args):
-    if all(isinstance(c, frozenset) for c in args):
-        return frozenset({v for c in args for v in c})
-    elif all(isinstance(x, dict) for x in args):
-        return {
-            k: merge_rules_dict(*[c[k] for c in args if k in c])
-            for c in args
-            for k in c.keys()
-        }
-    elif all(isinstance(x, RulesDict) for x in args):
-        return RulesDict(root=merge_rules_dict(*[c.root for c in args]))
-    else:
-        raise TypeError
-
-
-class RulesDict(
-    RootModel[
-        dict[
-            Action,
-            dict[StreamId, dict[EntryAttr, frozenset[PatternText]]],
-        ]
-    ]
-):
+class RulesDict(RootModel[RulesDictRoot]):
     @classmethod
     def from_rule(cls, rule: Rule) -> RulesDict:
         return cls(
