@@ -4,14 +4,12 @@ import itertools
 import re
 from pathlib import Path
 from re import Pattern
-from typing import Literal, Optional, TypeVar, cast, overload
+from typing import Literal, Optional, cast
 
 from pydantic import RootModel
 
 from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
 from feedly_regexp_marker.rules import PatternText, Rule, Rules
-
-T1 = TypeVar("T1")
 
 EntryAttr = Literal["title", "content"]
 RulesDictRoot = dict[
@@ -63,26 +61,17 @@ class RulesDict(RootModel[RulesDictRoot]):
         return merge_rules_dict(*[cls.from_rule(rule) for rule in rules])
 
     def compile(self) -> CompiledRulesDict:
-        @overload
-        def __rec(data: frozenset[PatternText]) -> Pattern[PatternText]: ...
-
-        @overload
-        def __rec(
-            data: dict[T1, frozenset[PatternText]],
-        ) -> dict[T1, Pattern[PatternText]]: ...
-
-        @overload
-        def __rec(data: dict[T1, dict]) -> dict[T1, dict]: ...
-
-        def __rec(data):
-            if isinstance(data, frozenset):
-                return re.compile("|".join(data)) if data else None
-            elif isinstance(data, dict):
-                return {k: __rec(v) for k, v in data.items()}
-            else:
-                raise
-
-        return __rec(self.root)
+        compiled_rules: CompiledRulesDict = {}
+        for action, stream_data in self.root.items():
+            compiled_rules[action] = {}
+            for stream_id, entry_attr_data in stream_data.items():
+                compiled_rules[action][stream_id] = {}
+                for entry_attr, pattern_texts in entry_attr_data.items():
+                    if pattern_texts:
+                        compiled_rules[action][stream_id][entry_attr] = re.compile(
+                            "|".join(pattern_texts)
+                        )
+        return compiled_rules
 
 
 class Classifier:
