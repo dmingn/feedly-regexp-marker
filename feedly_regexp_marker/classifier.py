@@ -7,16 +7,27 @@ from pathlib import Path
 from re import Pattern
 from typing import Literal, Optional, cast
 
-from pydantic import RootModel
+from pydantic import ConfigDict, RootModel
 
 from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
 from feedly_regexp_marker.rules import PatternText, Rule, Rules
 
 EntryAttr = Literal["title", "content"]
-RulesDictRoot = dict[
-    Action,
-    dict[StreamId, dict[EntryAttr, frozenset[PatternText]]],
-]
+
+
+class PatternTexts(RootModel[frozenset[PatternText]]):
+    model_config = ConfigDict(frozen=True)
+
+    def __or__(self, other: PatternTexts) -> PatternTexts:
+        return PatternTexts.model_validate(self.root | other.root)
+
+    def compile(self) -> Optional[Pattern[PatternText]]:
+        if not self.root:
+            return None
+        return re.compile("|".join(self.root))
+
+
+RulesDictRoot = dict[Action, dict[StreamId, dict[EntryAttr, PatternTexts]]]
 CompiledRulesDict = dict[
     Action,
     dict[StreamId, dict[EntryAttr, Optional[Pattern[PatternText]]]],
@@ -25,8 +36,10 @@ CompiledRulesDict = dict[
 
 def merge_rules_dict(*args: RulesDict) -> RulesDict:
     root: defaultdict[
-        Action, defaultdict[StreamId, defaultdict[EntryAttr, frozenset[PatternText]]]
-    ] = defaultdict(lambda: defaultdict(lambda: defaultdict(frozenset)))
+        Action, defaultdict[StreamId, defaultdict[EntryAttr, PatternTexts]]
+    ] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(lambda: PatternTexts(frozenset())))
+    )
 
     for rules_dict in args:
         for action, stream_ids in rules_dict.root.items():
@@ -69,9 +82,9 @@ class RulesDict(RootModel[RulesDictRoot]):
             for stream_id, entry_attr_data in stream_id_data.items():
                 for entry_attr, pattern_texts in entry_attr_data.items():
                     if pattern_texts:
-                        compiled_rules[action][stream_id][entry_attr] = re.compile(
-                            "|".join(pattern_texts)
-                        )
+                        compiled_rules[action][stream_id][
+                            entry_attr
+                        ] = pattern_texts.compile()
 
         return {
             action: {
