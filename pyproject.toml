@@ -2,6 +2,7 @@
 profile = "black"
 
 [tool.mypy]
+check_untyped_defs = true
 plugins = "pydantic.mypy"
 
 [[tool.mypy.overrides]]
