@@ -23,25 +23,6 @@ CompiledRulesDict = dict[
 ]
 
 
-def rule_to_rules_dict(rule: Rule) -> RulesDict:
-    return RulesDict(
-        root={
-            action: {
-                stream_id: {
-                    cast(EntryAttr, entry_attr): pattern_text_set
-                    for entry_attr, pattern_text_set in rule.patterns
-                }
-                for stream_id in rule.stream_ids
-            }
-            for action in rule.actions
-        }
-    )
-
-
-def rules_to_rules_dict(rules: Rules) -> RulesDict:
-    return merge_rules_dict(*[rule_to_rules_dict(rule) for rule in rules])
-
-
 @overload
 def merge_rules_dict(*args: frozenset[T]) -> frozenset[T]: ...
 
@@ -81,6 +62,25 @@ class RulesDict(
         ]
     ]
 ):
+    @classmethod
+    def from_rule(cls, rule: Rule) -> RulesDict:
+        return cls(
+            root={
+                action: {
+                    stream_id: {
+                        cast(EntryAttr, entry_attr): pattern_text_set
+                        for entry_attr, pattern_text_set in rule.patterns
+                    }
+                    for stream_id in rule.stream_ids
+                }
+                for action in rule.actions
+            }
+        )
+
+    @classmethod
+    def from_rules(cls, rules: Rules) -> RulesDict:
+        return merge_rules_dict(*[cls.from_rule(rule) for rule in rules])
+
     def compile(self) -> CompiledRulesDict:
         @overload
         def __rec(data: frozenset[PatternText]) -> Pattern[PatternText]: ...
@@ -117,7 +117,7 @@ class Classifier:
             return cls(
                 merge_rules_dict(
                     *[
-                        rules_to_rules_dict(Rules.from_yaml(p))
+                        RulesDict.from_rules(Rules.from_yaml(p))
                         for p in itertools.chain(
                             yml_path.glob("*.yaml"), yml_path.glob("*.yml")
                         )
@@ -125,7 +125,7 @@ class Classifier:
                 ).compile()
             )
         else:
-            return cls(rules_to_rules_dict(Rules.from_yaml(yml_path)).compile())
+            return cls(RulesDict.from_rules(Rules.from_yaml(yml_path)).compile())
 
     def __to_act(self, entry: Entry, action: Action) -> bool:
         if action not in self.__compiled_rules_dict:
