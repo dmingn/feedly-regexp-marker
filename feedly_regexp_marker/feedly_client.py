@@ -70,9 +70,7 @@ class FeedlyClient:
     def fetch_all_unread_entries(self) -> list[Entry]:
         return self.fetch_unread_entries(continuation=None)
 
-    def __mark_entries(
-        self, entries: list[Entry], action: Action, dry_run: bool
-    ) -> None:
+    def mark_entries(self, entries: list[Entry], action: Action, dry_run: bool) -> None:
         if dry_run:
             print([entry.title for entry in entries])
             return
@@ -90,7 +88,7 @@ class FeedlyClient:
         )
 
     def save_entries(self, entries: list[Entry], dry_run: bool) -> None:
-        self.__mark_entries(entries=entries, action="markAsSaved", dry_run=dry_run)
+        self.mark_entries(entries=entries, action="markAsSaved", dry_run=dry_run)
 
     def read_entries(self, entries: list[Entry], dry_run: bool) -> None:
-        self.__mark_entries(entries=entries, action="markAsRead", dry_run=dry_run)
+        self.mark_entries(entries=entries, action="markAsRead", dry_run=dry_run)
