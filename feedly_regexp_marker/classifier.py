@@ -29,8 +29,10 @@ class PatternTexts(RootModel[frozenset[PatternText]]):
         return re.compile("|".join(self.root))
 
 
-class RulesDict(RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]]):
-    def __or__(self, other: RulesDict) -> RulesDict:
+class RulePatternIndex(
+    RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]]
+):
+    def __or__(self, other: RulePatternIndex) -> RulePatternIndex:
         merged_root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = (
             defaultdict(lambda: PatternTexts(frozenset()))
         )
@@ -39,10 +41,10 @@ class RulesDict(RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]
             for key, pattern_text_set in root.items():
                 merged_root[key] |= pattern_text_set
 
-        return RulesDict.model_validate(merged_root)
+        return RulePatternIndex.model_validate(merged_root)
 
     @classmethod
-    def from_rule(cls, rule: Rule) -> RulesDict:
+    def from_rule(cls, rule: Rule) -> RulePatternIndex:
         return cls(
             root={
                 (action, stream_id, cast(EntryAttr, entry_attr)): pattern_text_set
@@ -53,7 +55,7 @@ class RulesDict(RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]
         )
 
     @classmethod
-    def from_rules(cls, rules: Rules) -> RulesDict:
+    def from_rules(cls, rules: Rules) -> RulePatternIndex:
         return functools.reduce(operator.__or__, rules)
 
 
@@ -61,22 +63,24 @@ class Classifier(
     RootModel[dict[tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]]]
 ):
     @classmethod
-    def from_rules_dict(cls, rules_dict: RulesDict) -> Classifier:
+    def from_rule_pattern_index(
+        cls, rule_pattern_index: RulePatternIndex
+    ) -> Classifier:
         return cls.model_validate(
             {
                 key: pattern_texts.compile() if pattern_texts else None
-                for key, pattern_texts in rules_dict.root.items()
+                for key, pattern_texts in rule_pattern_index.root.items()
             }
         )
 
     @classmethod
     def from_yml(cls, yml_path: Path) -> Classifier:
         if yml_path.is_dir():
-            return cls.from_rules_dict(
+            return cls.from_rule_pattern_index(
                 functools.reduce(
                     operator.__or__,
                     [
-                        RulesDict.from_rules(Rules.from_yaml(p))
+                        RulePatternIndex.from_rules(Rules.from_yaml(p))
                         for p in itertools.chain(
                             yml_path.glob("*.yaml"), yml_path.glob("*.yml")
                         )
@@ -84,7 +88,9 @@ class Classifier(
                 )
             )
         else:
-            return cls.from_rules_dict(RulesDict.from_rules(Rules.from_yaml(yml_path)))
+            return cls.from_rule_pattern_index(
+                RulePatternIndex.from_rules(Rules.from_yaml(yml_path))
+            )
 
     def __to_act(self, entry: Entry, action: Action) -> bool:
         if action not in self.root:
