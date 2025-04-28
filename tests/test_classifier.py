@@ -440,11 +440,11 @@ class TestClassifier:
         assert compiled2 is None  # Empty PatternTexts should compile to None
         assert isinstance(compiled3, re.Pattern)
 
-    # --- Test __to_act ---
+    # --- Test to_act ---
     @pytest.fixture
     def classifier_for_to_act(self) -> Classifier:
-        """Provides a Classifier instance for __to_act tests."""
-        # Define specific compiled rules for testing __to_act logic
+        """Provides a Classifier instance for to_act tests."""
+        # Define specific compiled rules for testing to_act logic
         compiled_rules: dict[
             tuple[Action, StreamId, EntryAttr], Optional[re.Pattern]
         ] = {
@@ -460,7 +460,7 @@ class TestClassifier:
         }
         return Classifier(compiled_rule_index=compiled_rules)
 
-    # --- Test cases for __to_act ---
+    # --- Test cases for to_act ---
     @pytest.mark.parametrize(
         "entry_data, action, expected_result",
         [
