@@ -20,9 +20,6 @@ EntryAttr = Literal["title", "content"]
 class PatternTexts(RootModel[frozenset[PatternText]]):
     model_config = ConfigDict(frozen=True)
 
-    def __bool__(self) -> bool:
-        return bool(self.root)
-
     def __or__(self, other: PatternTexts) -> PatternTexts:
         return PatternTexts.model_validate(self.root | other.root)
 
@@ -81,7 +78,7 @@ class Classifier(BaseModel):
     ) -> Classifier:
         return cls(
             compiled_rule_index={
-                key: pattern_texts.compile() if pattern_texts else None
+                key: pattern_texts.compile()
                 for key, pattern_texts in rule_pattern_index.root.items()
             }
         )
