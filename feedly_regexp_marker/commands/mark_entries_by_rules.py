@@ -13,7 +13,16 @@ app = typer.Typer()
 
 @app.command()
 def mark_entries_by_rules(
-    rules: Annotated[Path, typer.Argument(exists=True)],
+    rules_yaml_paths: Annotated[
+        list[Path],
+        typer.Argument(
+            file_okay=True,
+            dir_okay=False,
+            exists=True,
+            readable=True,
+            help="Path(s) to the rules YAML file(s)",
+        ),
+    ],
     token_dir: Annotated[Path, typer.Option(exists=True, file_okay=False)] = Path.home()
     / ".config"
     / "feedly",
@@ -27,7 +36,7 @@ def mark_entries_by_rules(
         entries = list(feedly_client.fetch_all_unread_entries())
         logger.info(f"fetched {len(entries)} entries.")
 
-        clf = Classifier.from_yml(rules)
+        clf = Classifier.from_yaml_paths(rules_yaml_paths)
 
         entries_to_save = [entry for entry in entries if clf.to_save(entry)]
         feedly_client.save_entries(

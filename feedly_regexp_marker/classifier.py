@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import functools
-import itertools
 import operator
 from collections import defaultdict
 from pathlib import Path
 from re import Pattern
-from typing import Literal, Mapping, Optional, cast
+from typing import Iterable, Literal, Mapping, Optional, cast
 
 from pydantic import BaseModel, ConfigDict, RootModel
 
@@ -78,20 +77,11 @@ class Classifier(BaseModel):
         )
 
     @classmethod
-    def from_yml(cls, yml_path: Path) -> Classifier:
-        yaml_file_paths = (
-            itertools.chain(yml_path.glob("*.yaml"), yml_path.glob("*.yml"))
-            if yml_path.is_dir()
-            else [yml_path]
-        )
-
+    def from_yaml_paths(cls, yaml_paths: Iterable[Path]) -> Classifier:
         return cls.from_rule_pattern_index(
             functools.reduce(
                 operator.__or__,
-                (
-                    RulePatternIndex.from_rules(Rules.from_yaml(p))
-                    for p in yaml_file_paths
-                ),
+                (RulePatternIndex.from_rules(Rules.from_yaml(p)) for p in yaml_paths),
                 RulePatternIndex(),
             )
         )
