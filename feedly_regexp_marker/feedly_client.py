@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from feedly.api_client.session import Auth, FeedlySession
+from feedly.api_client.session import FeedlySession
 from pydantic import BaseModel, ConfigDict
 
 StreamId = str
@@ -41,8 +41,8 @@ class StreamContents(BaseModel):
 
 
 class FeedlyClient:
-    def __init__(self, auth: Auth) -> None:
-        self.session = FeedlySession(auth=auth)
+    def __init__(self, session: FeedlySession) -> None:
+        self.session = session
 
     def fetch_unread_entries(self, continuation: str | None) -> list[Entry]:
         stream_contents = StreamContents.model_validate(

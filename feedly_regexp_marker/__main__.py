@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from feedly.api_client.session import FileAuthStore
+from feedly.api_client.session import FeedlySession, FileAuthStore
 from logzero import logger
 
 from feedly_regexp_marker.classifier import Classifier
@@ -17,7 +17,9 @@ def cli(
     dry_run: bool = False,
 ):
     try:
-        feedly_client = FeedlyClient(auth=FileAuthStore(token_dir=token_dir))
+        feedly_client = FeedlyClient(
+            session=FeedlySession(auth=FileAuthStore(token_dir=token_dir))
+        )
 
         entries = feedly_client.fetch_all_unread_entries()
         logger.info(f"fetched {len(entries)} entries.")
