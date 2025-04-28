@@ -44,7 +44,7 @@ class FeedlyClient:
     def __init__(self, auth: Auth) -> None:
         self.session = FeedlySession(auth=auth)
 
-    def _fetch_all_unread_entries(self, continuation: str | None) -> list[Entry]:
+    def fetch_unread_entries(self, continuation: str | None) -> list[Entry]:
         stream_contents = StreamContents(
             **self.session.do_api_request(
                 relative_url="/v3/streams/contents",
@@ -61,14 +61,14 @@ class FeedlyClient:
         )
 
         if stream_contents.continuation:
-            return stream_contents.items + self._fetch_all_unread_entries(
+            return stream_contents.items + self.fetch_unread_entries(
                 continuation=stream_contents.continuation
             )
         else:
             return stream_contents.items
 
     def fetch_all_unread_entries(self) -> list[Entry]:
-        return self._fetch_all_unread_entries(continuation=None)
+        return self.fetch_unread_entries(continuation=None)
 
     def __mark_entries(
         self, entries: list[Entry], action: Action, dry_run: bool
