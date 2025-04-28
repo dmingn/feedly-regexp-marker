@@ -52,7 +52,7 @@ class RulePatternIndex(
                 (action, stream_id, cast(EntryAttr, entry_attr)): pattern_text_set
                 for action in rule.actions
                 for stream_id in rule.stream_ids
-                for entry_attr, pattern_text_set in rule.patterns
+                for entry_attr, pattern_text_set in rule.patterns.model_dump().items()
             }
         )
 
