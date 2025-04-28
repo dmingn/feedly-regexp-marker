@@ -1,7 +1,10 @@
+import re
+from typing import Optional
+
 import pytest
 from pydantic import ValidationError
 
-from feedly_regexp_marker.classifier import EntryAttr, RulePatternIndex
+from feedly_regexp_marker.classifier import Classifier, EntryAttr, RulePatternIndex
 from feedly_regexp_marker.feedly_controller import Action, StreamId
 from feedly_regexp_marker.pattern_texts import PatternTexts
 from feedly_regexp_marker.rules import EntryPatternTexts, Rule, Rules
@@ -360,3 +363,44 @@ class TestRulePatternIndex:
         input_rules = Rules(root=frozenset(input_rules_list))
         rpi = RulePatternIndex.from_rules(input_rules)
         assert rpi.root == expected_root_data
+
+
+# === Test Classifier ===
+
+
+class TestClassifier:
+
+    # --- Test Initialization and Immutability ---
+    def test_classifier_initialization_empty(self):
+        """Test initializing Classifier with an empty compiled_rule_index."""
+        classifier = Classifier(compiled_rule_index={})
+        assert classifier.compiled_rule_index == {}
+        assert classifier.model_config.get("frozen") is True
+
+    def test_classifier_initialization_with_data(self):
+        """Test initializing Classifier with valid compiled_rule_index data."""
+        compiled_pattern_a = re.compile("A")
+        compiled_pattern_b = re.compile("B")
+        valid_data: dict[tuple[Action, StreamId, EntryAttr], Optional[re.Pattern]] = {
+            ("markAsRead", "s1", "title"): compiled_pattern_a,
+            ("markAsRead", "s1", "content"): None,
+            ("markAsSaved", "s2", "title"): compiled_pattern_b,
+        }
+        classifier = Classifier(compiled_rule_index=valid_data)
+        assert classifier.compiled_rule_index == valid_data
+        # Check if patterns are correctly stored
+        assert (
+            classifier.compiled_rule_index[("markAsRead", "s1", "title")]
+            is compiled_pattern_a
+        )
+        assert classifier.compiled_rule_index[("markAsRead", "s1", "content")] is None
+        assert classifier.model_config.get("frozen") is True
+
+    def test_classifier_frozen(self):
+        """Test Classifier is immutable due to frozen=True."""
+        classifier = Classifier(
+            compiled_rule_index={("markAsRead", "s1", "title"): re.compile("A")}
+        )
+        # Test attribute reassignment
+        with pytest.raises(ValidationError):
+            classifier.compiled_rule_index = {}  # type: ignore[misc]
