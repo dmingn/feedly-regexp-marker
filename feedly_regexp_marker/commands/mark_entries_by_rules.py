@@ -53,4 +53,4 @@ def mark_entries_by_rules(
         logger.info(f"read {len(entries_to_read)} entries.")
     except Exception as e:
         logger.exception(e)
-        raise e
+        typer.Exit(1)
