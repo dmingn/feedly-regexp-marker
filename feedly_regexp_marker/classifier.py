@@ -64,6 +64,8 @@ class RulePatternIndex(
 
 
 class Classifier(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     compiled_rule_index: dict[
         tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]
     ]
