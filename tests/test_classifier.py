@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from feedly_regexp_marker.classifier import EntryAttr, RulePatternIndex
 from feedly_regexp_marker.feedly_controller import Action, StreamId
 from feedly_regexp_marker.pattern_texts import PatternTexts
-from feedly_regexp_marker.rules import EntryPatternTexts, Rule
+from feedly_regexp_marker.rules import EntryPatternTexts, Rule, Rules
 
 # === Test RulePatternIndex ===
 
@@ -296,3 +296,67 @@ class TestRulePatternIndex:
         )
         rpi_empty_streams = RulePatternIndex.from_rule(rule_empty_streams)
         assert rpi_empty_streams.root == {}
+
+    # --- Test from_rules ---
+    def test_from_rules_empty(self):
+        """Test from_rules with an empty Rules set returns an empty index."""
+        empty_rules = Rules(root=frozenset())
+        rpi = RulePatternIndex.from_rules(empty_rules)
+        assert rpi.root == {}
+
+    @pytest.mark.parametrize(
+        "input_rules_list, expected_root_data",
+        [
+            # Single rule
+            pytest.param(
+                [
+                    Rule(  # Single Rule: Read S1 Title A
+                        stream_ids=frozenset(["s1"]),
+                        actions=frozenset(["markAsRead"]),
+                        patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+                    )
+                ],
+                {
+                    ("markAsRead", "s1", "title"): PatternTexts(["A"]),
+                    ("markAsRead", "s1", "content"): PatternTexts(),
+                },
+                id="single_rule",
+            ),
+            # Mixed disjoint and overlapping
+            pytest.param(
+                [
+                    Rule(  # Rule 1: Read S1 Title A
+                        stream_ids=frozenset(["s1"]),
+                        actions=frozenset(["markAsRead"]),
+                        patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+                    ),
+                    Rule(  # Rule 2: Read S1 Title B (overlaps with Rule 1)
+                        stream_ids=frozenset(["s1"]),
+                        actions=frozenset(["markAsRead"]),
+                        patterns=EntryPatternTexts(title=PatternTexts(["B"])),
+                    ),
+                    Rule(  # Rule 3: Save S2 Content X (disjoint)
+                        stream_ids=frozenset(["s2"]),
+                        actions=frozenset(["markAsSaved"]),
+                        patterns=EntryPatternTexts(content=PatternTexts(["X"])),
+                    ),
+                ],
+                {
+                    # from Rule 1 | Rule 2
+                    ("markAsRead", "s1", "title"): PatternTexts(["A", "B"]),  # Merged
+                    ("markAsRead", "s1", "content"): PatternTexts(),  # Merged empty
+                    # from Rule 3
+                    ("markAsSaved", "s2", "title"): PatternTexts(),
+                    ("markAsSaved", "s2", "content"): PatternTexts(["X"]),
+                },
+                id="mixed_disjoint_and_overlapping",
+            ),
+        ],
+    )
+    def test_from_rules_parametrized(
+        self, input_rules_list: list[Rule], expected_root_data: dict
+    ):
+        """Tests RulePatternIndex.from_rules with various numbers of rules."""
+        input_rules = Rules(root=frozenset(input_rules_list))
+        rpi = RulePatternIndex.from_rules(input_rules)
+        assert rpi.root == expected_root_data
