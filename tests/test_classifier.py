@@ -1,8 +1,10 @@
 import pytest
 from pydantic import ValidationError
 
-from feedly_regexp_marker.classifier import RulePatternIndex
+from feedly_regexp_marker.classifier import EntryAttr, RulePatternIndex
+from feedly_regexp_marker.feedly_controller import Action, StreamId
 from feedly_regexp_marker.pattern_texts import PatternTexts
+from feedly_regexp_marker.rules import EntryPatternTexts, Rule
 
 # === Test RulePatternIndex ===
 
@@ -160,3 +162,163 @@ class TestRulePatternIndex:
         # --- Test commutativity (a | b == b | a) ---
         result_reversed = rpi2 | rpi1
         assert result_reversed.root == expected_rpi.root
+
+    # --- Test from_rule ---
+    def test_from_rule_basic_title_only(self):
+        """Test from_rule with 1 action, 1 stream, title pattern only."""
+        rule = Rule(
+            stream_ids=frozenset(["s1"]),
+            actions=frozenset(["markAsRead"]),
+            patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+        )
+        rpi = RulePatternIndex.from_rule(rule)
+
+        expected_key_t = ("markAsRead", "s1", "title")
+        expected_key_c = ("markAsRead", "s1", "content")
+        expected_root = {
+            expected_key_t: PatternTexts(["A"]),
+            expected_key_c: PatternTexts(),  # model_dump() includes empty content
+        }
+        assert rpi.root == expected_root
+
+    def test_from_rule_basic_content_only(self):
+        """Test from_rule with 1 action, 1 stream, content pattern only."""
+        rule = Rule(
+            stream_ids=frozenset(["s1"]),
+            actions=frozenset(["markAsRead"]),
+            patterns=EntryPatternTexts(content=PatternTexts(["X"])),
+        )
+        rpi = RulePatternIndex.from_rule(rule)
+
+        expected_key_t = ("markAsRead", "s1", "title")
+        expected_key_c = ("markAsRead", "s1", "content")
+        expected_root = {
+            expected_key_t: PatternTexts(),  # model_dump() includes empty title
+            expected_key_c: PatternTexts(["X"]),
+        }
+        assert rpi.root == expected_root
+
+    def test_from_rule_both_attrs(self):
+        """Test from_rule with 1 action, 1 stream, both title and content patterns."""
+        rule = Rule(
+            stream_ids=frozenset(["s1"]),
+            actions=frozenset(["markAsRead"]),
+            patterns=EntryPatternTexts(
+                title=PatternTexts(["A"]), content=PatternTexts(["X"])
+            ),
+        )
+        rpi = RulePatternIndex.from_rule(rule)
+
+        expected_key_t = ("markAsRead", "s1", "title")
+        expected_key_c = ("markAsRead", "s1", "content")
+        expected_root = {
+            expected_key_t: PatternTexts(["A"]),
+            expected_key_c: PatternTexts(["X"]),
+        }
+        assert rpi.root == expected_root
+
+    def test_from_rule_multiple_actions(self):
+        """Test from_rule with multiple actions."""
+        rule = Rule(
+            stream_ids=frozenset(["s1"]),
+            actions=frozenset(["markAsRead", "markAsSaved"]),  # Multiple actions
+            patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+        )
+        rpi = RulePatternIndex.from_rule(rule)
+
+        expected_key_read_t = ("markAsRead", "s1", "title")
+        expected_key_read_c = ("markAsRead", "s1", "content")
+        expected_key_save_t = ("markAsSaved", "s1", "title")
+        expected_key_save_c = ("markAsSaved", "s1", "content")
+        expected_root = {
+            expected_key_read_t: PatternTexts(["A"]),
+            expected_key_read_c: PatternTexts(),
+            expected_key_save_t: PatternTexts(["A"]),
+            expected_key_save_c: PatternTexts(),
+        }
+        assert rpi.root == expected_root
+
+    def test_from_rule_multiple_streams(self):
+        """Test from_rule with multiple stream IDs."""
+        rule = Rule(
+            stream_ids=frozenset(["s1", "s2"]),  # Multiple streams
+            actions=frozenset(["markAsRead"]),
+            patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+        )
+        rpi = RulePatternIndex.from_rule(rule)
+
+        expected_key_s1_t = ("markAsRead", "s1", "title")
+        expected_key_s1_c = ("markAsRead", "s1", "content")
+        expected_key_s2_t = ("markAsRead", "s2", "title")
+        expected_key_s2_c = ("markAsRead", "s2", "content")
+        expected_root = {
+            expected_key_s1_t: PatternTexts(["A"]),
+            expected_key_s1_c: PatternTexts(),
+            expected_key_s2_t: PatternTexts(["A"]),
+            expected_key_s2_c: PatternTexts(),
+        }
+        assert rpi.root == expected_root
+
+    def test_from_rule_multiple_actions_and_streams(self):
+        """Test from_rule with multiple actions and stream IDs."""
+        rule = Rule(
+            stream_ids=frozenset(["s1", "s2"]),
+            actions=frozenset(["markAsRead", "markAsSaved"]),
+            patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+        )
+        rpi = RulePatternIndex.from_rule(rule)
+
+        expected_keys: list[tuple[Action, StreamId, EntryAttr]] = [
+            ("markAsRead", "s1", "title"),
+            ("markAsRead", "s2", "title"),
+            ("markAsSaved", "s1", "title"),
+            ("markAsSaved", "s2", "title"),
+            ("markAsRead", "s1", "content"),
+            ("markAsRead", "s2", "content"),
+            ("markAsSaved", "s1", "content"),
+            ("markAsSaved", "s2", "content"),
+        ]
+        assert len(rpi.root) == len(expected_keys)
+        for key in expected_keys:
+            assert key in rpi.root
+            if key[2] == "title":
+                assert rpi.root[key] == PatternTexts(["A"])
+            else:
+                assert rpi.root[key] == PatternTexts()  # Empty content
+
+    def test_from_rule_no_patterns(self):
+        """Test from_rule with empty patterns results in keys with empty PatternTexts."""
+        rule = Rule(
+            stream_ids=frozenset(["s1"]),
+            actions=frozenset(["markAsRead"]),
+            patterns=EntryPatternTexts(),  # Empty patterns
+        )
+        rpi = RulePatternIndex.from_rule(rule)
+
+        expected_key_t = ("markAsRead", "s1", "title")
+        expected_key_c = ("markAsRead", "s1", "content")
+        expected_root = {
+            expected_key_t: PatternTexts(),
+            expected_key_c: PatternTexts(),
+        }
+        assert rpi.root == expected_root
+
+    def test_from_rule_empty_actions_or_streams(self):
+        """Test from_rule with empty actions or stream_ids results in an empty index."""
+        # Empty actions
+        rule_empty_actions = Rule(
+            stream_ids=frozenset(["s1"]),
+            actions=frozenset(),  # Empty
+            patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+        )
+        rpi_empty_actions = RulePatternIndex.from_rule(rule_empty_actions)
+        assert rpi_empty_actions.root == {}
+
+        # Empty streams
+        rule_empty_streams = Rule(
+            stream_ids=frozenset(),  # Empty
+            actions=frozenset(["markAsRead"]),
+            patterns=EntryPatternTexts(title=PatternTexts(["A"])),
+        )
+        rpi_empty_streams = RulePatternIndex.from_rule(rule_empty_streams)
+        assert rpi_empty_streams.root == {}
