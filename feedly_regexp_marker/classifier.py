@@ -98,6 +98,7 @@ class Classifier(BaseModel):
                             yml_path.glob("*.yaml"), yml_path.glob("*.yml")
                         )
                     ],
+                    RulePatternIndex(root={}),
                 )
             )
         else:
