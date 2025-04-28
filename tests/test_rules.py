@@ -33,6 +33,14 @@ def test_entry_pattern_texts_with_data():
     assert patterns.content == content_patterns
 
 
+def test_entry_pattern_texts_empty_patterntext():
+    """Test EntryPatternTexts initialization with empty PatternText."""
+    with pytest.raises(ValidationError):
+        EntryPatternTexts(title=frozenset([""]))
+    with pytest.raises(ValidationError):
+        EntryPatternTexts(content=frozenset([""]))
+
+
 def test_entry_pattern_texts_frozen():
     """Test EntryPatternTexts is immutable."""
     patterns = EntryPatternTexts(title=frozenset(["test"]))
