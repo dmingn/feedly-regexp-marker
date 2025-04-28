@@ -22,6 +22,12 @@ class RulePatternIndex(
 ):
     model_config = ConfigDict(frozen=True)
 
+    def __init__(
+        self,
+        root: Optional[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]] = None,
+    ) -> None:
+        super().__init__(root=root or {})
+
     def __or__(self, other: RulePatternIndex) -> RulePatternIndex:
         merged_root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = (
             defaultdict(lambda: PatternTexts(frozenset()))
@@ -84,7 +90,7 @@ class Classifier(BaseModel):
                     RulePatternIndex.from_rules(Rules.from_yaml(p))
                     for p in yaml_file_paths
                 ),
-                RulePatternIndex(root={}),
+                RulePatternIndex(),
             )
         )
 
