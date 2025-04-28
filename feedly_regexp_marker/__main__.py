@@ -6,7 +6,7 @@ from feedly.api_client.session import FileAuthStore
 from logzero import logger
 
 from feedly_regexp_marker.classifier import Classifier
-from feedly_regexp_marker.feedly_controller import FeedlyController
+from feedly_regexp_marker.feedly_client import FeedlyClient
 
 
 def cli(
@@ -17,22 +17,22 @@ def cli(
     dry_run: bool = False,
 ):
     try:
-        feedly_controller = FeedlyController(auth=FileAuthStore(token_dir=token_dir))
+        feedly_client = FeedlyClient(auth=FileAuthStore(token_dir=token_dir))
 
-        entries = feedly_controller.fetch_all_unread_entries()
+        entries = feedly_client.fetch_all_unread_entries()
         logger.info(f"fetched {len(entries)} entries.")
 
         clf = Classifier.from_yml(rules)
 
         entries_to_save = [entry for entry in entries if clf.to_save(entry)]
-        feedly_controller.save_entries(
+        feedly_client.save_entries(
             entries=entries_to_save,
             dry_run=dry_run,
         )
         logger.info(f"saved {len(entries_to_save)} entries.")
 
         entries_to_read = [entry for entry in entries if clf.to_read(entry)]
-        feedly_controller.read_entries(
+        feedly_client.read_entries(
             entries=entries_to_read,
             dry_run=dry_run,
         )

@@ -48,7 +48,7 @@ class StreamContents(BaseModel):
         frozen = True
 
 
-class FeedlyController:
+class FeedlyClient:
     def __init__(self, auth: Auth) -> None:
         self.session = FeedlySession(auth=auth)
 

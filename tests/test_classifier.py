@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from feedly_regexp_marker.classifier import Classifier, EntryAttr, RulePatternIndex
-from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
+from feedly_regexp_marker.feedly_client import Action, Entry, StreamId
 from feedly_regexp_marker.pattern_texts import PatternTexts
 from feedly_regexp_marker.rules import EntryPatternTexts, Rule, Rules
 
