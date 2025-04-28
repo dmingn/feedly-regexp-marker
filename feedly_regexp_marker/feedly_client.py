@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Any, Generator, Literal, Optional
 
 from feedly.api_client.session import FeedlySession
 from pydantic import BaseModel, ConfigDict
@@ -44,31 +44,31 @@ class FeedlyClient:
     def __init__(self, session: FeedlySession) -> None:
         self.session = session
 
-    def fetch_unread_entries(self, continuation: str | None) -> list[Entry]:
-        stream_contents = StreamContents.model_validate(
-            self.session.do_api_request(
-                relative_url="/v3/streams/contents",
-                params=(
-                    {
-                        "streamId": f"user/{self.session.user.id}/category/global.all",
-                        "count": "1000",
-                        "ranked": "oldest",
-                        "unreadOnly": "true",
-                    }
-                    | ({"continuation": continuation} if continuation else dict())
-                ),
-            )
-        )
+    def fetch_all_unread_entries(self) -> Generator[Entry, Any, None]:
+        continuation = None
 
-        if stream_contents.continuation:
-            return stream_contents.items + self.fetch_unread_entries(
-                continuation=stream_contents.continuation
+        while True:
+            stream_contents = StreamContents.model_validate(
+                self.session.do_api_request(
+                    relative_url="/v3/streams/contents",
+                    params=(
+                        {
+                            "streamId": f"user/{self.session.user.id}/category/global.all",
+                            "count": "1000",
+                            "ranked": "oldest",
+                            "unreadOnly": "true",
+                        }
+                        | ({"continuation": continuation} if continuation else dict())
+                    ),
+                )
             )
-        else:
-            return stream_contents.items
 
-    def fetch_all_unread_entries(self) -> list[Entry]:
-        return self.fetch_unread_entries(continuation=None)
+            yield from stream_contents.items
+
+            if (not stream_contents.continuation) or (not stream_contents.items):
+                break
+
+            continuation = stream_contents.continuation
 
     def mark_entries(self, entries: list[Entry], action: Action, dry_run: bool) -> None:
         if dry_run:
