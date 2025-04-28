@@ -27,11 +27,6 @@ class PatternTexts(RootModel[frozenset[PatternText]]):
         return re.compile("|".join(self.root))
 
 
-CompiledRulesDict = dict[
-    tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]
-]
-
-
 def merge_rules_dict(*args: RulesDict) -> RulesDict:
     root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = defaultdict(
         lambda: PatternTexts(frozenset())
@@ -60,24 +55,23 @@ class RulesDict(RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]
     def from_rules(cls, rules: Rules) -> RulesDict:
         return merge_rules_dict(*[cls.from_rule(rule) for rule in rules])
 
-    def compile(self) -> CompiledRulesDict:
-        return {
-            key: pattern_texts.compile() if pattern_texts else None
-            for key, pattern_texts in self.root.items()
-        }
 
-
-class Classifier:
-    def __init__(
-        self,
-        compiled_rules_dict: CompiledRulesDict,
-    ) -> None:
-        self.__compiled_rules_dict = compiled_rules_dict
+class Classifier(
+    RootModel[dict[tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]]]
+):
+    @classmethod
+    def from_rules_dict(cls, rules_dict: RulesDict) -> Classifier:
+        return cls.model_validate(
+            {
+                key: pattern_texts.compile() if pattern_texts else None
+                for key, pattern_texts in rules_dict.root.items()
+            }
+        )
 
     @classmethod
     def from_yml(cls, yml_path: Path) -> Classifier:
         if yml_path.is_dir():
-            return cls(
+            return cls.from_rules_dict(
                 merge_rules_dict(
                     *[
                         RulesDict.from_rules(Rules.from_yaml(p))
@@ -85,22 +79,20 @@ class Classifier:
                             yml_path.glob("*.yaml"), yml_path.glob("*.yml")
                         )
                     ]
-                ).compile()
+                )
             )
         else:
-            return cls(RulesDict.from_rules(Rules.from_yaml(yml_path)).compile())
+            return cls.from_rules_dict(RulesDict.from_rules(Rules.from_yaml(yml_path)))
 
     def __to_act(self, entry: Entry, action: Action) -> bool:
-        if action not in self.__compiled_rules_dict:
+        if action not in self.root:
             return False
 
         if not entry.origin:
             return False
 
         try:
-            title_pattern = self.__compiled_rules_dict[
-                (action, entry.origin.streamId, "title")
-            ]
+            title_pattern = self.root[(action, entry.origin.streamId, "title")]
         except KeyError:
             pass
         else:
@@ -108,9 +100,7 @@ class Classifier:
                 return True
 
         try:
-            content_pattern = self.__compiled_rules_dict[
-                (action, entry.origin.streamId, "content")
-            ]
+            content_pattern = self.root[(action, entry.origin.streamId, "content")]
         except KeyError:
             pass
         else:
