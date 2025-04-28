@@ -2,10 +2,11 @@
 profile = "black"
 
 [tool.mypy]
+check_untyped_defs = true
 plugins = "pydantic.mypy"
 
 [[tool.mypy.overrides]]
-module = ["feedly.*", "logzero.*"]
+module = ["feedly.*", "logzero.*", "ruamel.*"]
 ignore_missing_imports = true
 
 [tool.poetry]
@@ -19,8 +20,8 @@ python = "^3.9"
 aiohttp = "^3.10.11"
 feedly-client = "^0.23.2"
 logzero = "^1.7.0"
-pydantic = "^1.9.0"
-pydantic-yaml = {extras = ["ruamel"], version = "^0.6.3"}
+pydantic = "^2.11.3"
+pydantic-yaml = "^1.4.0"
 typer = "^0.15.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -29,6 +30,7 @@ flake8 = "^7.1.1"
 isort = {extras = ["pyproject"], version = "^6.0.0"}
 mypy = "^1.14"
 pydocstyle = "^6.3.0"
+pytest = "^8.3.5"
 
 [tool.poetry.scripts]
 feedly-regexp-marker = "feedly_regexp_marker.__main__:main"

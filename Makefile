@@ -1,5 +1,5 @@
-.PHONY: lint
-lint: flake8 mypy
+.PHONY: test
+test: flake8 mypy pytest
 
 .PHONY: flake8
 flake8:
@@ -8,6 +8,10 @@ flake8:
 .PHONY: mypy
 mypy:
 	@poetry run mypy .
+
+.PHONY: pytest
+pytest:
+	@poetry run python -m pytest -svx
 
 .PHONY: access.token
 access.token:
