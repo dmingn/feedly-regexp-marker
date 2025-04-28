@@ -32,14 +32,14 @@ class RulePatternIndex(
 
     def __or__(self, other: RulePatternIndex) -> RulePatternIndex:
         merged_root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = (
-            defaultdict(lambda: PatternTexts(frozenset()))
+            defaultdict(PatternTexts)
         )
 
         for root in [self.root, other.root]:
-            for key, pattern_text_set in root.items():
-                merged_root[key] |= pattern_text_set
+            for key, pattern_texts in root.items():
+                merged_root[key] |= pattern_texts
 
-        return RulePatternIndex.model_validate(merged_root)
+        return RulePatternIndex(merged_root)
 
     @classmethod
     def from_rule(cls, rule: Rule) -> RulePatternIndex:
