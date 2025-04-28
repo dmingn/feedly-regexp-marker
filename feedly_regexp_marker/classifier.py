@@ -23,7 +23,7 @@ class PatternTexts(RootModel[frozenset[PatternText]]):
     def __or__(self, other: PatternTexts) -> PatternTexts:
         return PatternTexts.model_validate(self.root | other.root)
 
-    def compile(self) -> Optional[Pattern[PatternText]]:
+    def compile(self) -> Optional[Pattern]:
         if not self.root:
             return None
         return re.compile("|".join(self.root))
@@ -68,9 +68,7 @@ class RulePatternIndex(
 class Classifier(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    compiled_rule_index: dict[
-        tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]
-    ]
+    compiled_rule_index: dict[tuple[Action, StreamId, EntryAttr], Optional[Pattern]]
 
     @classmethod
     def from_rule_pattern_index(
