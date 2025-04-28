@@ -9,7 +9,7 @@ from pathlib import Path
 from re import Pattern
 from typing import Literal, Optional, cast
 
-from pydantic import ConfigDict, RootModel
+from pydantic import BaseModel, ConfigDict, RootModel
 
 from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
 from feedly_regexp_marker.rules import PatternText, Rule, Rules
@@ -61,15 +61,17 @@ class RulePatternIndex(
         return functools.reduce(operator.__or__, rules)
 
 
-class Classifier(
-    RootModel[dict[tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]]]
-):
+class Classifier(BaseModel):
+    compiled_rule_index: dict[
+        tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]
+    ]
+
     @classmethod
     def from_rule_pattern_index(
         cls, rule_pattern_index: RulePatternIndex
     ) -> Classifier:
-        return cls.model_validate(
-            {
+        return cls(
+            compiled_rule_index={
                 key: pattern_texts.compile() if pattern_texts else None
                 for key, pattern_texts in rule_pattern_index.root.items()
             }
@@ -95,14 +97,13 @@ class Classifier(
             )
 
     def __to_act(self, entry: Entry, action: Action) -> bool:
-        if action not in self.root:
-            return False
-
         if not entry.origin:
             return False
 
         try:
-            title_pattern = self.root[(action, entry.origin.streamId, "title")]
+            title_pattern = self.compiled_rule_index[
+                (action, entry.origin.streamId, "title")
+            ]
         except KeyError:
             pass
         else:
@@ -110,7 +111,9 @@ class Classifier(
                 return True
 
         try:
-            content_pattern = self.root[(action, entry.origin.streamId, "content")]
+            content_pattern = self.compiled_rule_index[
+                (action, entry.origin.streamId, "content")
+            ]
         except KeyError:
             pass
         else:
