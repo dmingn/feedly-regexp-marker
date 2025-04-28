@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Generator, Literal, Optional
+from typing import Any, Generator, Iterable, Literal, Optional
 
 from feedly.api_client.session import FeedlySession
 from pydantic import BaseModel, ConfigDict
@@ -70,7 +70,9 @@ class FeedlyClient:
 
             continuation = stream_contents.continuation
 
-    def mark_entries(self, entries: list[Entry], action: Action, dry_run: bool) -> None:
+    def mark_entries(
+        self, entries: Iterable[Entry], action: Action, dry_run: bool
+    ) -> None:
         if dry_run:
             print([entry.title for entry in entries])
             return
@@ -87,8 +89,8 @@ class FeedlyClient:
             },
         )
 
-    def save_entries(self, entries: list[Entry], dry_run: bool) -> None:
+    def save_entries(self, entries: Iterable[Entry], dry_run: bool) -> None:
         self.mark_entries(entries=entries, action="markAsSaved", dry_run=dry_run)
 
-    def read_entries(self, entries: list[Entry], dry_run: bool) -> None:
+    def read_entries(self, entries: Iterable[Entry], dry_run: bool) -> None:
         self.mark_entries(entries=entries, action="markAsRead", dry_run=dry_run)
