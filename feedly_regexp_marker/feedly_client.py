@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Literal, Optional
 
 from feedly.api_client.session import Auth, FeedlySession
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 StreamId = str
 EntryId = str
@@ -12,17 +12,13 @@ Action = Literal["markAsSaved", "markAsRead"]
 
 class EntryContent(BaseModel):
     content: str
-
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class EntryOrigin(BaseModel):
     streamId: StreamId
     title: Optional[str] = None
-
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class Entry(BaseModel):
@@ -33,9 +29,7 @@ class Entry(BaseModel):
     content: Optional[EntryContent] = None
     summary: Optional[EntryContent] = None
     origin: Optional[EntryOrigin] = None
-
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class StreamContents(BaseModel):
@@ -43,9 +37,7 @@ class StreamContents(BaseModel):
 
     items: list[Entry]
     continuation: Optional[str] = None
-
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 class FeedlyClient:
