@@ -29,14 +29,14 @@ def mark_entries_by_rules(
     dry_run: bool = False,
 ):
     try:
+        clf = Classifier.from_yaml_paths(rules_yaml_paths)
+
         feedly_client = FeedlyClient(
             session=FeedlySession(auth=FileAuthStore(token_dir=token_dir))
         )
 
         entries = list(feedly_client.fetch_all_unread_entries())
         logger.info(f"fetched {len(entries)} entries.")
-
-        clf = Classifier.from_yaml_paths(rules_yaml_paths)
 
         entries_to_save = [entry for entry in entries if clf.to_save(entry)]
         feedly_client.save_entries(
