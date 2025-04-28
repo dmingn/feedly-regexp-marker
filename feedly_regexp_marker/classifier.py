@@ -58,7 +58,9 @@ class RulePatternIndex(
 
     @classmethod
     def from_rules(cls, rules: Rules) -> RulePatternIndex:
-        return functools.reduce(operator.__or__, rules)
+        return functools.reduce(
+            operator.__or__, [cls.from_rule(rule) for rule in rules]
+        )
 
 
 class Classifier(BaseModel):
