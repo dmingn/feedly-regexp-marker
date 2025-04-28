@@ -395,14 +395,14 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "feedly-client"
-version = "0.23.2"
+version = "0.26"
 description = "A lightweight client for the feedly api (https://developers.feedly.com)."
 optional = false
 python-versions = ">=3.6.0"
 groups = ["main"]
 files = [
-    {file = "feedly-client-0.23.2.tar.gz", hash = "sha256:c322dc61d806ec9b0691e80f905e3d9db8586d17e44edc578fd68b3151ab8582"},
-    {file = "feedly_client-0.23.2-py2.py3-none-any.whl", hash = "sha256:562cc6f823c7cfaeea2efd229f22d4204c6947352e6afc84a22058bf8b0c8003"},
+    {file = "feedly-client-0.26.tar.gz", hash = "sha256:723a57f3d2cf6619d7af9d9da133f1b6cf73744fe24e298e2b3147942ddc0866"},
+    {file = "feedly_client-0.26-py3-none-any.whl", hash = "sha256:9458ba92a7ac5cc71928bf86712a0def2cf319c436af0e431512d087146a87f5"},
 ]
 
 [package.dependencies]
@@ -1571,4 +1571,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "b4d758c9d43c79305001925051db1fe76b6f3f52f3532ac36fa2c7269d91bc39"
+content-hash = "470cb1db8b7b3ed7b57c422c4c355e54768ccfc5da74be9ab46f20c48dc2d08f"
