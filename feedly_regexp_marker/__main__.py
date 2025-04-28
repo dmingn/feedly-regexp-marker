@@ -21,7 +21,7 @@ def cli(
             session=FeedlySession(auth=FileAuthStore(token_dir=token_dir))
         )
 
-        entries = feedly_client.fetch_all_unread_entries()
+        entries = list(feedly_client.fetch_all_unread_entries())
         logger.info(f"fetched {len(entries)} entries.")
 
         clf = Classifier.from_yml(rules)
