@@ -18,7 +18,7 @@ authors = ["dmingn <dmingn@users.noreply.github.com>"]
 [tool.poetry.dependencies]
 python = "^3.9"
 aiohttp = "^3.11.18"
-feedly-client = "^0.23.2"
+feedly-client = "^0.26"
 logzero = "^1.7.0"
 pydantic = "^2.11.3"
 pydantic-yaml = "^1.4.0"
