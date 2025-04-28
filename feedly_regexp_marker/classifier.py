@@ -27,7 +27,6 @@ class PatternTexts(RootModel[frozenset[PatternText]]):
         return re.compile("|".join(self.root))
 
 
-RulesDictRoot = dict[tuple[Action, StreamId, EntryAttr], PatternTexts]
 CompiledRulesDict = dict[
     tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]
 ]
@@ -45,7 +44,7 @@ def merge_rules_dict(*args: RulesDict) -> RulesDict:
     return RulesDict.model_validate(root)
 
 
-class RulesDict(RootModel[RulesDictRoot]):
+class RulesDict(RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]]):
     @classmethod
     def from_rule(cls, rule: Rule) -> RulesDict:
         return cls(
