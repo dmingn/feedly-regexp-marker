@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import functools
 import itertools
+import operator
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -27,19 +29,18 @@ class PatternTexts(RootModel[frozenset[PatternText]]):
         return re.compile("|".join(self.root))
 
 
-def merge_rules_dict(*args: RulesDict) -> RulesDict:
-    root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = defaultdict(
-        lambda: PatternTexts(frozenset())
-    )
-
-    for rules_dict in args:
-        for key, pattern_text_set in rules_dict.root.items():
-            root[key] |= pattern_text_set
-
-    return RulesDict.model_validate(root)
-
-
 class RulesDict(RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]]):
+    def __or__(self, other: RulesDict) -> RulesDict:
+        merged_root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = (
+            defaultdict(lambda: PatternTexts(frozenset()))
+        )
+
+        for root in [self.root, other.root]:
+            for key, pattern_text_set in root.items():
+                merged_root[key] |= pattern_text_set
+
+        return RulesDict.model_validate(merged_root)
+
     @classmethod
     def from_rule(cls, rule: Rule) -> RulesDict:
         return cls(
@@ -53,7 +54,7 @@ class RulesDict(RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]
 
     @classmethod
     def from_rules(cls, rules: Rules) -> RulesDict:
-        return merge_rules_dict(*[cls.from_rule(rule) for rule in rules])
+        return functools.reduce(operator.__or__, rules)
 
 
 class Classifier(
@@ -72,13 +73,14 @@ class Classifier(
     def from_yml(cls, yml_path: Path) -> Classifier:
         if yml_path.is_dir():
             return cls.from_rules_dict(
-                merge_rules_dict(
-                    *[
+                functools.reduce(
+                    operator.__or__,
+                    [
                         RulesDict.from_rules(Rules.from_yaml(p))
                         for p in itertools.chain(
                             yml_path.glob("*.yaml"), yml_path.glob("*.yml")
                         )
-                    ]
+                    ],
                 )
             )
         else:
