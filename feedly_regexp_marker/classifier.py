@@ -106,33 +106,25 @@ class Classifier(BaseModel):
         if not entry.origin:
             return False
 
-        try:
-            title_pattern = self.compiled_rule_index[
-                (action, entry.origin.streamId, "title")
-            ]
-        except KeyError:
-            pass
-        else:
-            if entry.title and title_pattern and title_pattern.search(entry.title):
-                return True
+        title_pattern = self.compiled_rule_index.get(
+            (action, entry.origin.streamId, "title")
+        )
+        if entry.title and title_pattern and title_pattern.search(entry.title):
+            return True
 
-        try:
-            content_pattern = self.compiled_rule_index[
-                (action, entry.origin.streamId, "content")
-            ]
-        except KeyError:
-            pass
-        else:
-            if (
-                entry.content
-                and content_pattern
-                and content_pattern.search(entry.content.content)
-            ) or (
-                entry.summary
-                and content_pattern
-                and content_pattern.search(entry.summary.content)
-            ):
-                return True
+        content_pattern = self.compiled_rule_index.get(
+            (action, entry.origin.streamId, "content")
+        )
+        if (
+            entry.content
+            and content_pattern
+            and content_pattern.search(entry.content.content)
+        ) or (
+            entry.summary
+            and content_pattern
+            and content_pattern.search(entry.summary.content)
+        ):
+            return True
 
         return False
 
