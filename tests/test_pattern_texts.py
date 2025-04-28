@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 import pytest
 from pydantic import ValidationError
@@ -142,3 +143,25 @@ def test_pattern_texts_compile_special_chars():
     assert not compiled.search("123a")
     assert compiled.search("this is the end.")  # Matches end\.
     assert not compiled.search("this is the end?")
+
+
+def test_pattern_texts_compile_with_pipe_in_pattern():
+    """Test compiling patterns where a pattern itself contains a pipe."""
+    patterns = frozenset(["a|b", "c"])  # "a|b" is treated as one pattern unit here
+    pt = PatternTexts(root=patterns)
+    compiled: Optional[re.Pattern] = pt.compile()
+
+    assert isinstance(compiled, re.Pattern)
+    # The resulting pattern should be "a|b|c" or "c|a|b"
+    # It should match 'a', 'b', or 'c'
+    possible_patterns = ("a|b|c", "c|a|b")
+    assert compiled.pattern in possible_patterns
+
+    # Test matching
+    assert compiled.search("a")  # Matches the 'a' part of "a|b"
+    assert compiled.search("b")  # Matches the 'b' part of "a|b"
+    assert compiled.search("c")  # Matches "c"
+    assert not compiled.search("d")
+    assert compiled.search("contains a here")
+    assert compiled.search("contains b here")
+    assert compiled.search("contains c here")
