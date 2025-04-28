@@ -32,6 +32,8 @@ class PatternTexts(RootModel[frozenset[PatternText]]):
 class RulePatternIndex(
     RootModel[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]]
 ):
+    model_config = ConfigDict(frozen=True)
+
     def __or__(self, other: RulePatternIndex) -> RulePatternIndex:
         merged_root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = (
             defaultdict(lambda: PatternTexts(frozenset()))
