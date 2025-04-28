@@ -27,25 +27,20 @@ class PatternTexts(RootModel[frozenset[PatternText]]):
         return re.compile("|".join(self.root))
 
 
-RulesDictRoot = dict[Action, dict[StreamId, dict[EntryAttr, PatternTexts]]]
+RulesDictRoot = dict[tuple[Action, StreamId, EntryAttr], PatternTexts]
 CompiledRulesDict = dict[
-    Action,
-    dict[StreamId, dict[EntryAttr, Optional[Pattern[PatternText]]]],
+    tuple[Action, StreamId, EntryAttr], Optional[Pattern[PatternText]]
 ]
 
 
 def merge_rules_dict(*args: RulesDict) -> RulesDict:
-    root: defaultdict[
-        Action, defaultdict[StreamId, defaultdict[EntryAttr, PatternTexts]]
-    ] = defaultdict(
-        lambda: defaultdict(lambda: defaultdict(lambda: PatternTexts(frozenset())))
+    root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = defaultdict(
+        lambda: PatternTexts(frozenset())
     )
 
     for rules_dict in args:
-        for action, stream_ids in rules_dict.root.items():
-            for stream_id, entry_attrs in stream_ids.items():
-                for entry_attr, pattern_text_set in entry_attrs.items():
-                    root[action][stream_id][entry_attr] |= pattern_text_set
+        for key, pattern_text_set in rules_dict.root.items():
+            root[key] |= pattern_text_set
 
     return RulesDict.model_validate(root)
 
@@ -55,14 +50,10 @@ class RulesDict(RootModel[RulesDictRoot]):
     def from_rule(cls, rule: Rule) -> RulesDict:
         return cls(
             root={
-                action: {
-                    stream_id: {
-                        cast(EntryAttr, entry_attr): pattern_text_set
-                        for entry_attr, pattern_text_set in rule.patterns
-                    }
-                    for stream_id in rule.stream_ids
-                }
+                (action, stream_id, cast(EntryAttr, entry_attr)): pattern_text_set
                 for action in rule.actions
+                for stream_id in rule.stream_ids
+                for entry_attr, pattern_text_set in rule.patterns
             }
         )
 
@@ -71,27 +62,9 @@ class RulesDict(RootModel[RulesDictRoot]):
         return merge_rules_dict(*[cls.from_rule(rule) for rule in rules])
 
     def compile(self) -> CompiledRulesDict:
-        compiled_rules: defaultdict[
-            Action,
-            defaultdict[
-                StreamId, defaultdict[EntryAttr, Optional[Pattern[PatternText]]]
-            ],
-        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: None)))
-
-        for action, stream_id_data in self.root.items():
-            for stream_id, entry_attr_data in stream_id_data.items():
-                for entry_attr, pattern_texts in entry_attr_data.items():
-                    if pattern_texts:
-                        compiled_rules[action][stream_id][
-                            entry_attr
-                        ] = pattern_texts.compile()
-
         return {
-            action: {
-                stream_id: dict(entry_attr_data)
-                for stream_id, entry_attr_data in stream_id_data.items()
-            }
-            for action, stream_id_data in compiled_rules.items()
+            key: pattern_texts.compile() if pattern_texts else None
+            for key, pattern_texts in self.root.items()
         }
 
 
@@ -122,31 +95,36 @@ class Classifier:
         if action not in self.__compiled_rules_dict:
             return False
 
-        if (
-            not entry.origin
-            or entry.origin.streamId not in self.__compiled_rules_dict[action]
-        ):
+        if not entry.origin:
             return False
 
-        title_pattern = self.__compiled_rules_dict[action][entry.origin.streamId][
-            "title"
-        ]
-        if entry.title and title_pattern and title_pattern.search(entry.title):
-            return True
+        try:
+            title_pattern = self.__compiled_rules_dict[
+                (action, entry.origin.streamId, "title")
+            ]
+        except KeyError:
+            pass
+        else:
+            if entry.title and title_pattern and title_pattern.search(entry.title):
+                return True
 
-        content_pattern = self.__compiled_rules_dict[action][entry.origin.streamId][
-            "content"
-        ]
-        if (
-            entry.content
-            and content_pattern
-            and content_pattern.search(entry.content.content)
-        ) or (
-            entry.summary
-            and content_pattern
-            and content_pattern.search(entry.summary.content)
-        ):
-            return True
+        try:
+            content_pattern = self.__compiled_rules_dict[
+                (action, entry.origin.streamId, "content")
+            ]
+        except KeyError:
+            pass
+        else:
+            if (
+                entry.content
+                and content_pattern
+                and content_pattern.search(entry.content.content)
+            ) or (
+                entry.summary
+                and content_pattern
+                and content_pattern.search(entry.summary.content)
+            ):
+                return True
 
         return False
 
