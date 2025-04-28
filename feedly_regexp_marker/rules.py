@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, RootModel, StringConstraints
+from pydantic import BaseModel, ConfigDict, RootModel
 from pydantic_yaml import parse_yaml_file_as
 
 from feedly_regexp_marker.feedly_controller import Action, StreamId
-
-PatternText = Annotated[str, StringConstraints(min_length=1)]
+from feedly_regexp_marker.pattern_texts import PatternTexts
 
 
 class EntryPatternTexts(BaseModel):
-    title: frozenset[PatternText] = frozenset()
-    content: frozenset[PatternText] = frozenset()
+    title: PatternTexts = PatternTexts()
+    content: PatternTexts = PatternTexts()
     model_config = ConfigDict(frozen=True)
 
 

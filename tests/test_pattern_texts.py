@@ -1,9 +1,40 @@
 import re
 
 import pytest
+from pydantic import ValidationError
 
-from feedly_regexp_marker.classifier import PatternTexts
-from feedly_regexp_marker.rules import PatternText
+from feedly_regexp_marker.pattern_texts import PatternText, PatternTexts
+
+# --- Test Cases for PatternTexts ---
+
+
+def test_pattern_texts_defaults():
+    """Test PatternTexts initializes with default empty frozenset."""
+    patterns = PatternTexts()
+    assert patterns.root == frozenset()
+    assert patterns.model_config.get("frozen") is True
+
+
+def test_pattern_texts_with_data():
+    """Test PatternTexts initialization with data."""
+    data: frozenset[PatternText] = frozenset(["^Important:", "Alert"])
+    patterns = PatternTexts(root=data)
+    assert patterns.root == data
+
+
+def test_pattern_texts_empty_patterntext():
+    """Test PatternTexts initialization with empty PatternText."""
+    with pytest.raises(ValidationError):
+        PatternTexts(root=frozenset([""]))
+
+
+def test_pattern_texts_frozen():
+    """Test PatternTexts is immutable."""
+    patterns = PatternTexts(root=frozenset(["test"]))
+    with pytest.raises(ValidationError):
+        # Pydantic v2 raises ValidationError on mutation attempts for frozen models
+        patterns.root = frozenset(["new"])  # type: ignore[misc]
+
 
 # --- Test Cases for PatternTexts.__or__ ---
 

@@ -4,14 +4,8 @@ import pytest
 from pydantic import ValidationError
 from ruamel.yaml.parser import ParserError
 
-from feedly_regexp_marker.rules import (
-    Action,
-    EntryPatternTexts,
-    PatternText,
-    Rule,
-    Rules,
-    StreamId,
-)
+from feedly_regexp_marker.pattern_texts import PatternTexts
+from feedly_regexp_marker.rules import Action, EntryPatternTexts, Rule, Rules, StreamId
 
 # --- Test EntryPatternTexts ---
 
@@ -19,26 +13,18 @@ from feedly_regexp_marker.rules import (
 def test_entry_pattern_texts_defaults():
     """Test EntryPatternTexts initializes with default empty frozensets."""
     patterns = EntryPatternTexts()
-    assert patterns.title == frozenset()
-    assert patterns.content == frozenset()
+    assert patterns.title == PatternTexts()
+    assert patterns.content == PatternTexts()
     assert patterns.model_config.get("frozen") is True
 
 
 def test_entry_pattern_texts_with_data():
     """Test EntryPatternTexts initialization with data."""
-    title_patterns: frozenset[PatternText] = frozenset(["^Important:", "Alert"])
-    content_patterns: frozenset[PatternText] = frozenset(["keyword1", "keyword2"])
+    title_patterns = PatternTexts(frozenset(["^Important:", "Alert"]))
+    content_patterns = PatternTexts(frozenset(["keyword1", "keyword2"]))
     patterns = EntryPatternTexts(title=title_patterns, content=content_patterns)
     assert patterns.title == title_patterns
     assert patterns.content == content_patterns
-
-
-def test_entry_pattern_texts_empty_patterntext():
-    """Test EntryPatternTexts initialization with empty PatternText."""
-    with pytest.raises(ValidationError):
-        EntryPatternTexts(title=frozenset([""]))
-    with pytest.raises(ValidationError):
-        EntryPatternTexts(content=frozenset([""]))
 
 
 def test_entry_pattern_texts_frozen():
@@ -46,9 +32,9 @@ def test_entry_pattern_texts_frozen():
     patterns = EntryPatternTexts(title=frozenset(["test"]))
     with pytest.raises(ValidationError):
         # Pydantic v2 raises ValidationError on mutation attempts for frozen models
-        patterns.title = frozenset(["new"])  # type: ignore[misc]
+        patterns.title = PatternTexts(frozenset(["new"]))  # type: ignore[misc]
     with pytest.raises(ValidationError):
-        patterns.content = frozenset(["new"])  # type: ignore[misc]
+        patterns.content = PatternTexts(frozenset(["new"]))  # type: ignore[misc]
 
 
 # --- Test Rule ---

@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import itertools
 import operator
-import re
 from collections import defaultdict
 from pathlib import Path
 from re import Pattern
@@ -12,21 +11,10 @@ from typing import Literal, Optional, cast
 from pydantic import BaseModel, ConfigDict, RootModel
 
 from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
-from feedly_regexp_marker.rules import PatternText, Rule, Rules
+from feedly_regexp_marker.pattern_texts import PatternTexts
+from feedly_regexp_marker.rules import Rule, Rules
 
 EntryAttr = Literal["title", "content"]
-
-
-class PatternTexts(RootModel[frozenset[PatternText]]):
-    model_config = ConfigDict(frozen=True)
-
-    def __or__(self, other: PatternTexts) -> PatternTexts:
-        return PatternTexts.model_validate(self.root | other.root)
-
-    def compile(self) -> Optional[Pattern]:
-        if not self.root:
-            return None
-        return re.compile("|".join(self.root))
 
 
 class RulePatternIndex(
