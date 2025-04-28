@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from feedly_regexp_marker.classifier import Classifier, EntryAttr, RulePatternIndex
-from feedly_regexp_marker.feedly_controller import Action, StreamId
+from feedly_regexp_marker.feedly_controller import Action, Entry, StreamId
 from feedly_regexp_marker.pattern_texts import PatternTexts
 from feedly_regexp_marker.rules import EntryPatternTexts, Rule, Rules
 
@@ -439,3 +439,237 @@ class TestClassifier:
         assert isinstance(compiled1, re.Pattern)
         assert compiled2 is None  # Empty PatternTexts should compile to None
         assert isinstance(compiled3, re.Pattern)
+
+    # --- Test __to_act ---
+    @pytest.fixture
+    def classifier_for_to_act(self) -> Classifier:
+        """Provides a Classifier instance for __to_act tests."""
+        # Define specific compiled rules for testing __to_act logic
+        compiled_rules: dict[
+            tuple[Action, StreamId, EntryAttr], Optional[re.Pattern]
+        ] = {
+            # Read rules for stream 's1'
+            ("markAsRead", "s1", "title"): re.compile(r"Important|Alert"),
+            ("markAsRead", "s1", "content"): re.compile(r"keyword|secret"),
+            # Save rules for stream 's1'
+            ("markAsSaved", "s1", "title"): re.compile(r"SaveMe"),
+            # No save rule for s1 content
+            # Read rules for stream 's2'
+            ("markAsRead", "s2", "title"): None,  # Explicitly None
+            ("markAsRead", "s2", "content"): re.compile(r"projectX"),
+        }
+        return Classifier(compiled_rule_index=compiled_rules)
+
+    # --- Test cases for __to_act ---
+    @pytest.mark.parametrize(
+        "entry_data, action, expected_result",
+        [
+            # 1. No origin
+            pytest.param(
+                {"id": "e0", "title": "Test"}, "markAsRead", False, id="no_origin"
+            ),
+            # 2. No matching key in compiled_rule_index (stream 's3')
+            pytest.param(
+                {"id": "e1", "title": "Important", "origin": {"streamId": "s3"}},
+                "markAsRead",
+                False,
+                id="no_matching_stream",
+            ),
+            # 3. No matching key in compiled_rule_index (save action for s1 content)
+            pytest.param(
+                {
+                    "id": "e2",
+                    "title": "News",
+                    "content": {"content": "SaveMe"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsSaved",
+                False,
+                id="no_matching_content_key_for_save",  # Title rule exists, but content doesn't match title
+            ),
+            # 4. Title match (Read, s1)
+            pytest.param(
+                {
+                    "id": "e3",
+                    "title": "Alert: System Down",
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="title_match_read_s1_alert",
+            ),
+            pytest.param(
+                {
+                    "id": "e4",
+                    "title": "This is Important",
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="title_match_read_s1_important",
+            ),
+            # 5. Title no match (Read, s1) -> check content/summary
+            pytest.param(
+                {"id": "e5", "title": "Regular News", "origin": {"streamId": "s1"}},
+                "markAsRead",
+                False,
+                id="title_no_match_read_s1_no_content",
+            ),
+            # 6. Title match (Save, s1)
+            pytest.param(
+                {
+                    "id": "e6",
+                    "title": "Please SaveMe Now",
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsSaved",
+                True,
+                id="title_match_save_s1",
+            ),
+            # 7. Title no match (Save, s1)
+            pytest.param(
+                {"id": "e7", "title": "Do Not Save", "origin": {"streamId": "s1"}},
+                "markAsSaved",
+                False,
+                id="title_no_match_save_s1",
+            ),
+            # 8. Content match (Read, s1) - Title doesn't match
+            pytest.param(
+                {
+                    "id": "e8",
+                    "title": "News",
+                    "content": {"content": "Found keyword"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="content_match_read_s1_keyword",
+            ),
+            pytest.param(
+                {
+                    "id": "e9",
+                    "title": "News",
+                    "content": {"content": "The secret word"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="content_match_read_s1_secret",
+            ),
+            # 9. Content no match (Read, s1)
+            pytest.param(
+                {
+                    "id": "e10",
+                    "title": "News",
+                    "content": {"content": "Nothing relevant"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                False,
+                id="content_no_match_read_s1",
+            ),
+            # 10. Summary match (Read, s1) - Title/Content don't match
+            pytest.param(
+                {
+                    "id": "e11",
+                    "title": "News",
+                    "summary": {"content": "Summary has keyword"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="summary_match_read_s1_keyword",
+            ),
+            pytest.param(
+                {
+                    "id": "e12",
+                    "title": "News",
+                    "content": {"content": "No match"},
+                    "summary": {"content": "Summary has secret"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="summary_match_read_s1_secret_content_no_match",
+            ),
+            # 11. Summary no match (Read, s1)
+            pytest.param(
+                {
+                    "id": "e13",
+                    "title": "News",
+                    "summary": {"content": "Nothing relevant"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                False,
+                id="summary_no_match_read_s1",
+            ),
+            # 12. Title is None
+            pytest.param(
+                {
+                    "id": "e14",
+                    "title": None,
+                    "content": {"content": "keyword"},
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="title_none_content_match",
+            ),
+            # 13. Content and Summary are None
+            pytest.param(
+                {
+                    "id": "e15",
+                    "title": "Important",
+                    "content": None,
+                    "summary": None,
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                True,
+                id="content_summary_none_title_match",
+            ),
+            pytest.param(
+                {
+                    "id": "e16",
+                    "title": "News",
+                    "content": None,
+                    "summary": None,
+                    "origin": {"streamId": "s1"},
+                },
+                "markAsRead",
+                False,
+                id="content_summary_none_title_no_match",
+            ),
+            # 14. Pattern is None in index (Read, s2, title)
+            pytest.param(
+                {"id": "e17", "title": "Any Title", "origin": {"streamId": "s2"}},
+                "markAsRead",
+                False,
+                id="title_pattern_is_none",  # Should proceed to content check
+            ),
+            # 15. Pattern is None in index, but content matches (Read, s2)
+            pytest.param(
+                {
+                    "id": "e18",
+                    "title": "Any Title",
+                    "content": {"content": "About projectX"},
+                    "origin": {"streamId": "s2"},
+                },
+                "markAsRead",
+                True,
+                id="title_pattern_none_content_match",
+            ),
+        ],
+    )
+    def test_to_act(
+        self,
+        classifier_for_to_act: Classifier,
+        entry_data: dict,
+        action: Action,
+        expected_result: bool,
+    ):
+        """Tests the to_act method for various scenarios."""
+        # Create Entry object from data dictionary
+        entry = Entry(**entry_data)
+        assert classifier_for_to_act.to_act(entry, action) == expected_result

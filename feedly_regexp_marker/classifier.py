@@ -96,7 +96,7 @@ class Classifier(BaseModel):
             )
         )
 
-    def __to_act(self, entry: Entry, action: Action) -> bool:
+    def to_act(self, entry: Entry, action: Action) -> bool:
         if not entry.origin:
             return False
 
@@ -123,7 +123,7 @@ class Classifier(BaseModel):
         return False
 
     def to_save(self, entry: Entry) -> bool:
-        return self.__to_act(entry=entry, action="markAsSaved")
+        return self.to_act(entry=entry, action="markAsSaved")
 
     def to_read(self, entry: Entry) -> bool:
-        return self.__to_act(entry=entry, action="markAsRead")
+        return self.to_act(entry=entry, action="markAsRead")

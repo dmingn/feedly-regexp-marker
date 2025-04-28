@@ -19,7 +19,7 @@ class EntryContent(BaseModel):
 
 class EntryOrigin(BaseModel):
     streamId: StreamId
-    title: Optional[str]
+    title: Optional[str] = None
 
     class Config:
         frozen = True
