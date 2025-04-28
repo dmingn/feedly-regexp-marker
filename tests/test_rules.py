@@ -11,7 +11,7 @@ from feedly_regexp_marker.rules import Action, EntryPatternTexts, Rule, Rules, S
 
 
 def test_entry_pattern_texts_defaults():
-    """Test EntryPatternTexts initializes with default empty frozensets."""
+    """Test EntryPatternTexts initializes with default empty PatternTexts."""
     patterns = EntryPatternTexts()
     assert patterns.title == PatternTexts()
     assert patterns.content == PatternTexts()
@@ -29,7 +29,7 @@ def test_entry_pattern_texts_with_data():
 
 def test_entry_pattern_texts_frozen():
     """Test EntryPatternTexts is immutable."""
-    patterns = EntryPatternTexts(title=frozenset(["test"]))
+    patterns = EntryPatternTexts(title=PatternTexts(frozenset(["test"])))
     with pytest.raises(ValidationError):
         # Pydantic v2 raises ValidationError on mutation attempts for frozen models
         patterns.title = PatternTexts(frozenset(["new"]))  # type: ignore[misc]
@@ -59,7 +59,8 @@ def test_rule_with_data():
     stream_ids: frozenset[StreamId] = frozenset(["feed/1", "feed/2"])
     actions: frozenset[Action] = frozenset(["markAsRead", "markAsSaved"])
     patterns = EntryPatternTexts(
-        title=frozenset(["Title Pattern"]), content=frozenset(["Content Pattern"])
+        title=PatternTexts(frozenset(["Title Pattern"])),
+        content=PatternTexts(frozenset(["Content Pattern"])),
     )
     name = "My Test Rule"
     rule = Rule(stream_ids=stream_ids, actions=actions, patterns=patterns, name=name)
@@ -84,7 +85,7 @@ def test_rule_frozen():
     with pytest.raises(ValidationError):
         rule.actions = frozenset(["markAsSaved"])  # type: ignore[misc]
     with pytest.raises(ValidationError):
-        rule.patterns = EntryPatternTexts(title=frozenset(["new"]))  # type: ignore[misc]
+        rule.patterns = EntryPatternTexts(title=PatternTexts(frozenset(["new"])))  # type: ignore[misc]
 
 
 # --- Test Rules ---
@@ -96,7 +97,7 @@ def sample_rule1() -> Rule:
     return Rule(
         stream_ids=frozenset(["feed/1"]),
         actions=frozenset(["markAsRead"]),
-        patterns=EntryPatternTexts(title=frozenset(["Rule1 Title"])),
+        patterns=EntryPatternTexts(title=PatternTexts(frozenset(["Rule1 Title"]))),
         name="Rule 1",
     )
 
@@ -106,7 +107,7 @@ def sample_rule2() -> Rule:
     return Rule(
         stream_ids=frozenset(["feed/2", "feed/3"]),
         actions=frozenset(["markAsSaved"]),
-        patterns=EntryPatternTexts(content=frozenset(["Rule2 Content"])),
+        patterns=EntryPatternTexts(content=PatternTexts(frozenset(["Rule2 Content"]))),
         name="Rule 2",
     )
 
