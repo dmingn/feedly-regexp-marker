@@ -404,3 +404,38 @@ class TestClassifier:
         # Test attribute reassignment
         with pytest.raises(ValidationError):
             classifier.compiled_rule_index = {}  # type: ignore[misc]
+
+    # --- Test from_rule_pattern_index ---
+    def test_from_rule_pattern_index_empty(self):
+        """Test creating Classifier from an empty RulePatternIndex."""
+        empty_rpi = RulePatternIndex()
+        classifier = Classifier.from_rule_pattern_index(empty_rpi)
+        assert classifier.compiled_rule_index == {}
+
+    def test_from_rule_pattern_index_with_data(self):
+        """Test creating Classifier from RulePatternIndex with data."""
+        key1: tuple[Action, StreamId, EntryAttr] = ("markAsRead", "s1", "title")
+        key2: tuple[Action, StreamId, EntryAttr] = ("markAsRead", "s1", "content")
+        key3: tuple[Action, StreamId, EntryAttr] = ("markAsSaved", "s2", "title")
+
+        pt1 = PatternTexts(["A", "B"])  # Non-empty
+        pt2 = PatternTexts()  # Empty
+        pt3 = PatternTexts(["C"])  # Non-empty
+
+        rpi = RulePatternIndex(root={key1: pt1, key2: pt2, key3: pt3})
+        classifier = Classifier.from_rule_pattern_index(rpi)
+
+        # Check keys exist
+        assert key1 in classifier.compiled_rule_index
+        assert key2 in classifier.compiled_rule_index
+        assert key3 in classifier.compiled_rule_index
+        assert len(classifier.compiled_rule_index) == 3
+
+        # Check compiled patterns (value types and content)
+        compiled1 = classifier.compiled_rule_index[key1]
+        compiled2 = classifier.compiled_rule_index[key2]
+        compiled3 = classifier.compiled_rule_index[key3]
+
+        assert isinstance(compiled1, re.Pattern)
+        assert compiled2 is None  # Empty PatternTexts should compile to None
+        assert isinstance(compiled3, re.Pattern)
