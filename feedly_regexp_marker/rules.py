@@ -30,6 +30,9 @@ class Rules(RootModel[frozenset[Rule]]):
     def __iter__(self):
         yield from self.root.__iter__()
 
+    def __or__(self, other: Rules) -> Rules:
+        return Rules(root=self.root | other.root)
+
     @classmethod
     def from_yaml(cls, yaml_path: Path) -> Rules:
         return parse_yaml_file_as(cls, yaml_path)
