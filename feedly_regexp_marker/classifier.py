@@ -85,23 +85,22 @@ class Classifier(BaseModel):
 
     @classmethod
     def from_yml(cls, yml_path: Path) -> Classifier:
-        if yml_path.is_dir():
-            return cls.from_rule_pattern_index(
-                functools.reduce(
-                    operator.__or__,
-                    [
-                        RulePatternIndex.from_rules(Rules.from_yaml(p))
-                        for p in itertools.chain(
-                            yml_path.glob("*.yaml"), yml_path.glob("*.yml")
-                        )
-                    ],
-                    RulePatternIndex(root={}),
-                )
+        yaml_file_paths = (
+            itertools.chain(yml_path.glob("*.yaml"), yml_path.glob("*.yml"))
+            if yml_path.is_dir()
+            else [yml_path]
+        )
+
+        return cls.from_rule_pattern_index(
+            functools.reduce(
+                operator.__or__,
+                (
+                    RulePatternIndex.from_rules(Rules.from_yaml(p))
+                    for p in yaml_file_paths
+                ),
+                RulePatternIndex(root={}),
             )
-        else:
-            return cls.from_rule_pattern_index(
-                RulePatternIndex.from_rules(Rules.from_yaml(yml_path))
-            )
+        )
 
     def __to_act(self, entry: Entry, action: Action) -> bool:
         if not entry.origin:
