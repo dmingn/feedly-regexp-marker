@@ -9,18 +9,35 @@ from feedly_regexp_marker.pattern_texts import PatternText, PatternTexts
 # --- Test Cases for PatternTexts ---
 
 
-def test_pattern_texts_defaults():
-    """Test PatternTexts initializes with default empty frozenset."""
-    patterns = PatternTexts()
-    assert patterns.root == frozenset()
-    assert patterns.model_config.get("frozen") is True
-
-
-def test_pattern_texts_with_data():
-    """Test PatternTexts initialization with data."""
-    data: frozenset[PatternText] = frozenset(["^Important:", "Alert"])
-    patterns = PatternTexts(root=data)
-    assert patterns.root == data
+@pytest.mark.parametrize(
+    "init_kwargs, expected_root",
+    [
+        pytest.param({}, frozenset(), id="no_args"),
+        pytest.param({"root": frozenset()}, frozenset(), id="explicit_empty_frozenset"),
+        pytest.param(
+            {"root": frozenset(["^Important:", "Alert"])},
+            frozenset(["^Important:", "Alert"]),
+            id="init_with_frozenset",
+        ),
+        pytest.param(
+            {"root": ["^Important:", "Alert"]},
+            frozenset(["^Important:", "Alert"]),
+            id="init_with_list",
+        ),
+        pytest.param(
+            {"root": tuple(["^Important:", "Alert"])},
+            frozenset(["^Important:", "Alert"]),
+            id="init_with_tuple",
+        ),
+    ],
+)
+def test_pattern_texts_initialization(
+    init_kwargs: dict, expected_root: frozenset[PatternText]
+):
+    """Tests PatternTexts initialization for various valid inputs."""
+    pt = PatternTexts(**init_kwargs)
+    assert pt.root == expected_root
+    assert pt.model_config.get("frozen") is True
 
 
 def test_pattern_texts_empty_patterntext():
