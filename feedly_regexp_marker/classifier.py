@@ -6,7 +6,7 @@ import operator
 from collections import defaultdict
 from pathlib import Path
 from re import Pattern
-from typing import Literal, Optional, cast
+from typing import Literal, Mapping, Optional, cast
 
 from pydantic import BaseModel, ConfigDict, RootModel
 
@@ -24,9 +24,11 @@ class RulePatternIndex(
 
     def __init__(
         self,
-        root: Optional[dict[tuple[Action, StreamId, EntryAttr], PatternTexts]] = None,
+        root: Optional[
+            Mapping[tuple[Action, StreamId, EntryAttr], PatternTexts]
+        ] = None,
     ) -> None:
-        super().__init__(root=root or {})
+        super().__init__(root=dict(root or {}))
 
     def __or__(self, other: RulePatternIndex) -> RulePatternIndex:
         merged_root: defaultdict[tuple[Action, StreamId, EntryAttr], PatternTexts] = (
