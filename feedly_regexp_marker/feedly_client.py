@@ -45,8 +45,8 @@ class FeedlyClient:
         self.session = FeedlySession(auth=auth)
 
     def fetch_unread_entries(self, continuation: str | None) -> list[Entry]:
-        stream_contents = StreamContents(
-            **self.session.do_api_request(
+        stream_contents = StreamContents.model_validate(
+            self.session.do_api_request(
                 relative_url="/v3/streams/contents",
                 params=(
                     {
