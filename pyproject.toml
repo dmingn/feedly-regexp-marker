@@ -20,7 +20,7 @@ python = "^3.9"
 aiohttp = "^3.11.18"
 feedly-client = "^0.23.2"
 logzero = "^1.7.0"
-pydantic = "^2.11.3"
+pydantic = "^2.11.4"
 pydantic-yaml = "^1.4.0"
 typer = "^0.15.1"
 
